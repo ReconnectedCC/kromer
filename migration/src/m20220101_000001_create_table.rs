@@ -78,6 +78,17 @@ impl Migration {
             .create_index(
                 Index::create()
                     .if_not_exists()
+                    .name("transactions_request_id")
+                    .table(Transactions::Table)
+                    .col(Transactions::RequestId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
                     .name("transactions_metadata")
                     .table(Transactions::Table)
                     .col(Transactions::Metadata)
