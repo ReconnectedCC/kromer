@@ -56,9 +56,10 @@ async fn get_richest_addresses(
 
     let conn = &state.conn;
 
-    let richest_addresses: Vec<addresses::Model> = Query::find_richest_addresses(conn, limit, offset)
-        .await
-        .expect("could not retrieve richest addresses"); // TODO: Handle this better
+    let richest_addresses: Vec<addresses::Model> =
+        Query::find_richest_addresses(conn, limit, offset)
+            .await
+            .expect("could not retrieve richest addresses"); // TODO: Handle this better
 
     let total = Query::count_total_addresses(conn)
         .await
@@ -87,12 +88,44 @@ async fn get_richest_addresses(
 
 #[get("/{address}/transactions")]
 async fn get_address_transactions(
-    _state: web::Data<AppState>,
+    state: web::Data<AppState>,
     address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
     let address = address.into_inner();
 
-    Ok(HttpResponse::Ok().body(address))
+    let conn = &state.conn;
+
+    // Im not particularly sure about the function name here
+    let transaction_count = Query::count_total_transactions_from_address(conn, &address)
+        .await
+        .expect("could not count total transactions");
+    let transactions = Query::find_transactions_from_address(conn, &address)
+        .await
+        .expect("could not find transactions"); // TODO: Handle this better
+
+    // TODO: This is missing 2 fields, `metadata` and `type`, type can be `transfer`, `name_purchase`, `name_a_record`, or `name_transfer`. `metadata` is the CommonMeta shit.
+    let response: Vec<serde_json::Value> = transactions
+        .into_iter()
+        .map(|tx| {
+            json!({
+                "id": tx.id,
+                "from": tx.from,
+                "to": tx.to,
+                "value": tx.value,
+                "time": tx.time,
+                "name": tx.name,
+                "sent_metaname": tx.sent_metaname,
+                "sent_name": tx.sent_name,
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(json!({
+        "ok": true,
+        "count": response.len(),
+        "total": transaction_count,
+        "transactions": response,
+    })))
 }
 
 #[get("/{address}/names")]
