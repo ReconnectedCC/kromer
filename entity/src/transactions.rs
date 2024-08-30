@@ -11,7 +11,7 @@ pub struct Model {
     pub to: Option<String>,
     #[sea_orm(column_type = "Float")]
     pub value: f32,
-    pub time: Date,
+    pub time: DateTimeWithTimeZone,
     pub name: Option<String>,
     pub sent_metaname: Option<String>,
     pub sent_name: Option<String>,

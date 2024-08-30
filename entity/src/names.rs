@@ -11,7 +11,7 @@ pub struct Model {
     pub name: String,
     pub owner: String,
     pub original_owner: Option<String>,
-    pub registered: Date,
+    pub registered: DateTimeWithTimeZone,
     pub updated: Option<Date>,
     pub transferred: Option<Date>,
     pub a: Option<String>,
