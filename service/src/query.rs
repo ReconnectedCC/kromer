@@ -103,7 +103,10 @@ impl Query {
     /// let total = Query::count_total_transactions_from_address(&db, "kromernya").await?;
     /// println!("Total transactions: {}", total);
     /// ```
-    pub async fn count_total_transactions_from_address(db: &DbConn, address: &str) -> Result<u64, DbErr> {
+    pub async fn count_total_transactions_from_address(
+        db: &DbConn,
+        address: &str,
+    ) -> Result<u64, DbErr> {
         Transaction::find()
             .filter(
                 transactions::Column::From

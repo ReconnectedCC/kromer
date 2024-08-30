@@ -21,7 +21,7 @@ async fn get_specific_address(
 
     let addr: Option<addresses::Model> = Query::find_address(conn, &address)
         .await
-        .map_err(|e| error::ErrorInternalServerError(e))?;
+        .map_err(error::ErrorInternalServerError)?;
 
     // Kinda cursed but it works
     match addr {
@@ -63,11 +63,11 @@ async fn get_richest_addresses(
     let richest_addresses: Vec<addresses::Model> =
         Query::find_richest_addresses(conn, limit, offset)
             .await
-            .map_err(|e| error::ErrorInternalServerError(e))?;
+            .map_err(error::ErrorInternalServerError)?;
 
     let total = Query::count_total_addresses(conn)
         .await
-        .map_err(|e| error::ErrorInternalServerError(e))?;
+        .map_err(error::ErrorInternalServerError)?;
 
     let response: Vec<serde_json::Value> = richest_addresses
         .into_iter()
@@ -101,7 +101,7 @@ async fn get_address_transactions(
 
     let addr = Query::find_address(conn, &address)
         .await
-        .map_err(|e| error::ErrorInternalServerError(e))?;
+        .map_err(error::ErrorInternalServerError)?;
 
     if addr.is_none() {
         return Ok(HttpResponse::Ok().json(json!({
@@ -113,10 +113,10 @@ async fn get_address_transactions(
     // Im not particularly sure about the function name here
     let transaction_count = Query::count_total_transactions_from_address(conn, &address)
         .await
-        .map_err(|e| error::ErrorInternalServerError(e))?;
+        .map_err(error::ErrorInternalServerError)?;
     let transactions = Query::find_transactions_from_address(conn, &address)
         .await
-        .map_err(|e| error::ErrorInternalServerError(e))?;
+        .map_err(error::ErrorInternalServerError)?;
 
     // TODO: This is missing 2 fields, `metadata` and `type`, type can be `transfer`, `name_purchase`, `name_a_record`, or `name_transfer`. `metadata` is the CommonMeta shit.
     let response: Vec<serde_json::Value> = transactions
