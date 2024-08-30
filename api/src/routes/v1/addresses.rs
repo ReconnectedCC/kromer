@@ -13,10 +13,10 @@ async fn list_addresses(_data: web::Data<AppState>) -> Result<HttpResponse, Erro
 
 #[get("/{address}")]
 async fn get_specific_address(
-    data: web::Data<AppState>,
+    state: web::Data<AppState>,
     path: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let conn = &data.conn;
+    let conn = &state.conn;
     let address = path.into_inner();
 
     let addr: Option<addresses::Model> = Query::find_address(conn, &address)
@@ -41,11 +41,11 @@ async fn get_specific_address(
 
 #[get("/rich/")] // TODO: Fix this, we should just be able to do `/addresses/rich`.
 async fn get_richest_addresses(
-    _data: web::Data<AppState>,
+    state: web::Data<AppState>,
     path: web::Path<(u64, u64)>,
 ) -> Result<HttpResponse, Error> {
     let (limit, offset) = path.into_inner();
-    let conn = &_data.conn;
+    let conn = &state.conn;
 
     let richest_addresses: Vec<addresses::Model> = Query::find_richest_addresses(conn, limit, offset)
         .await
@@ -78,8 +78,8 @@ async fn get_richest_addresses(
 
 #[get("/{address}/transactions")]
 async fn get_address_transactions(
-    address: web::Path<String>,
     _state: web::Data<AppState>,
+    address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
     let address = address.into_inner();
 
@@ -88,8 +88,8 @@ async fn get_address_transactions(
 
 #[get("/{address}/names")]
 async fn get_address_names(
-    address: web::Path<String>,
     _state: web::Data<AppState>,
+    address: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
     let address = address.into_inner();
 
