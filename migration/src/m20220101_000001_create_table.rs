@@ -3,6 +3,151 @@ use sea_orm_migration::{prelude::*, schema::*};
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+impl Migration {
+    async fn create_transaction_indexes(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_from")
+                    .table(Transactions::Table)
+                    .col(Transactions::From)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_from")
+                    .table(Transactions::Table)
+                    .col(Transactions::To)
+                    .to_owned(),
+            )
+            .await?;
+
+        // transactions_op
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_name")
+                    .table(Transactions::Table)
+                    .col(Transactions::Name)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_sent_name")
+                    .table(Transactions::Table)
+                    .col(Transactions::SentName)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_sent_metaname")
+                    .table(Transactions::Table)
+                    .col(Transactions::SentMetaname)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_sent_metaname_sent_name")
+                    .table(Transactions::Table)
+                    .col(Transactions::SentMetaname)
+                    .col(Transactions::SentName)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("transactions_metadata")
+                    .table(Transactions::Table)
+                    .col(Transactions::Metadata)
+                    .to_owned(),
+            )
+            .await
+    }
+
+    async fn create_address_indexes(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("addresses_address_unique")
+                    .table(Addresses::Table)
+                    .col(Addresses::Address)
+                    .unique()
+                    .to_owned(),
+            )
+            .await
+    }
+
+    async fn create_name_indexes(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("names_name_unique")
+                    .table(Names::Table)
+                    .col(Names::Name)
+                    .unique()
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("names_owner")
+                    .table(Names::Table)
+                    .col(Names::Owner)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("names_original_owner")
+                    .table(Names::Table)
+                    .col(Names::OriginalOwner)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("names_unpaid")
+                    .table(Names::Table)
+                    .col(Names::Unpaid)
+                    .to_owned(),
+            )
+            .await
+    }
+}
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -34,6 +179,8 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        Migration::create_address_indexes(manager).await?;
+
         manager
             .create_table(
                 Table::create()
@@ -51,10 +198,17 @@ impl MigrationTrait for Migration {
                             .null(),
                     )
                     .col(ColumnDef::new(Transactions::SentName).string_len(64).null())
+                    .col(
+                        ColumnDef::new(Transactions::Metadata)
+                            .string_len(512)
+                            .null(),
+                    )
                     .col(uuid(Transactions::RequestId).unique_key())
                     .to_owned(),
             )
             .await?;
+
+        Migration::create_transaction_indexes(manager).await?;
 
         manager
             .create_table(
@@ -77,10 +231,11 @@ impl MigrationTrait for Migration {
                     .col(float(Names::Unpaid))
                     .to_owned(),
             )
-            .await
+            .await?;
+
+        Migration::create_name_indexes(manager).await
 
         // TODO: Indexes
-        // TODO: Names table
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -124,6 +279,7 @@ enum Transactions {
     SentMetaname,
     SentName,
     RequestId,
+    Metadata, // Called `op` in Krist.
 }
 
 #[derive(DeriveIden)]
