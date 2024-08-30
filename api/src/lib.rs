@@ -1,8 +1,6 @@
 mod routes;
 
-use actix_web::{
-    get, middleware, web, App, Error, HttpResponse, HttpServer, Result,
-};
+use actix_web::{get, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use std::env;
 
 use kromer_economy_migration::{Migrator, MigratorTrait};
@@ -46,10 +44,10 @@ pub async fn start() -> Result<(), std::io::Error> {
                 web::scope("/v1").service(
                     web::scope("/addresses")
                         .service(routes::v1::addresses::list_addresses)
+                        .service(routes::v1::addresses::get_richest_addresses) // This has to be here otherwise /addresses/rich will conflict with /addresses/:address
                         .service(routes::v1::addresses::get_specific_address)
                         .service(routes::v1::addresses::get_address_names)
-                        .service(routes::v1::addresses::get_address_transactions)
-                        .service(routes::v1::addresses::get_richest_addresses),
+                        .service(routes::v1::addresses::get_address_transactions),
                 ),
             )
     })
