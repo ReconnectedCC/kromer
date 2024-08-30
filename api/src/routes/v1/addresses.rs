@@ -1,4 +1,4 @@
-use actix_web::{get, error, web, Error, HttpResponse, Result};
+use actix_web::{get, web, Error, HttpResponse, Result};
 
 use kromer_economy_entity::addresses;
 use kromer_economy_service::Query;
@@ -42,11 +42,38 @@ async fn get_specific_address(
 #[get("/rich/")] // TODO: Fix this, we should just be able to do `/addresses/rich`.
 async fn get_richest_addresses(
     _data: web::Data<AppState>,
-    path: web::Path<(u32, u32)>,
+    path: web::Path<(u64, u64)>,
 ) -> Result<HttpResponse, Error> {
     let (limit, offset) = path.into_inner();
+    let conn = &_data.conn;
 
-    Ok(HttpResponse::Ok().body("hai"))
+    let richest_addresses: Vec<addresses::Model> = Query::find_richest_addresses(conn, limit, offset)
+        .await
+        .expect("could not retrieve richest addresses"); // TODO: Handle this better
+
+    let total = Query::count_total_addresses(conn)
+        .await
+        .expect("could not count total addresses"); // TODO: Handle this better
+
+    let response: Vec<serde_json::Value> = richest_addresses
+        .into_iter()
+        .map(|addr| {
+            json!({
+                "address": addr.address,
+                "balance": addr.balance,
+                "totalin": addr.total_in,
+                "totalout": addr.total_out,
+                "firstseen": addr.first_seen,
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(json!({
+        "ok": true,
+        "count": response.len(),
+        "total": total,
+        "addresses": response,
+    })))
 }
 
 #[get("/{address}/transactions")]
