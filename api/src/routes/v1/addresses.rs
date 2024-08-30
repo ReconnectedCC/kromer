@@ -45,7 +45,7 @@ struct LimitAndOffset {
     offset: Option<u64>,
 }
 
-#[get("/rich")] // TODO: Fix this, we should just be able to do `/addresses/rich`.
+#[get("/rich")]
 async fn get_richest_addresses(
     state: web::Data<AppState>,
     path: web::Query<LimitAndOffset>,
