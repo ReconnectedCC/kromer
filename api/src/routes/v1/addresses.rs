@@ -39,12 +39,21 @@ async fn get_specific_address(
     }
 }
 
-#[get("/rich/")] // TODO: Fix this, we should just be able to do `/addresses/rich`.
+#[derive(Debug, serde::Deserialize)]
+struct LimitAndOffset {
+    limit: Option<u64>,
+    offset: Option<u64>,
+}
+
+#[get("/rich")] // TODO: Fix this, we should just be able to do `/addresses/rich`.
 async fn get_richest_addresses(
     state: web::Data<AppState>,
-    path: web::Path<(u64, u64)>,
+    path: web::Query<LimitAndOffset>,
 ) -> Result<HttpResponse, Error> {
-    let (limit, offset) = path.into_inner();
+    let path = path.into_inner();
+    let limit = path.limit.unwrap_or(50);
+    let offset = path.offset.unwrap_or(0);
+
     let conn = &state.conn;
 
     let richest_addresses: Vec<addresses::Model> = Query::find_richest_addresses(conn, limit, offset)
