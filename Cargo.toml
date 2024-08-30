@@ -1,0 +1,32 @@
+[package]
+name = "kromer-economy"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [".", "api", "service", "entity", "migration"]
+resolver = "2"
+
+[workspace.dependencies]
+sea-orm-migration = { version = "1.0.0", features = [
+    "runtime-tokio-native-tls",
+    "sqlx-postgres",
+] }
+sea-orm = { version = "1.0.0", features = [
+    "sqlx-postgres",
+    "runtime-tokio-native-tls",
+    "macros",
+    "with-chrono",
+    "with-uuid"
+] }
+tokio = { version = "1.39.3", features = [
+    "full",
+] } # TODO: Not use full feature set.
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+serde = { version = "1.0.209", features = ["derive"] }
+serde_json = "1.0.127"
+
+[dependencies]
+kromer-economy-api = { path = "api" }
+tokio.workspace = true

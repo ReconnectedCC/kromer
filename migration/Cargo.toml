@@ -1,0 +1,13 @@
+[package]
+name = "kromer-economy-migration"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "kromer-economy-migration-cli"
+path = "src/main.rs"
+
+[dependencies]
+async-std = { version = "1", features = ["attributes", "tokio1"] }
+sea-orm-migration.workspace = true

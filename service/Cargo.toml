@@ -1,0 +1,8 @@
+[package]
+name = "kromer-economy-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sea-orm.workspace = true
+kromer-economy-entity = { path = "../entity" }
