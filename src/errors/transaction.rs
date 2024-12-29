@@ -10,6 +10,9 @@ pub enum TransactionError {
 
     #[error("Failed to create transaction")]
     FailedCreate,
+
+    #[error("Sender has insufficient funds")]
+    InsufficientFunds
 }
 
 impl error::ResponseError for TransactionError {
@@ -18,6 +21,7 @@ impl error::ResponseError for TransactionError {
             TransactionError::NotFound => StatusCode::NOT_FOUND,
             TransactionError::InvalidAmount => StatusCode::BAD_REQUEST,
             TransactionError::FailedCreate => StatusCode::INTERNAL_SERVER_ERROR,
+            TransactionError::InsufficientFunds => StatusCode::BAD_REQUEST,
         }
     }
 }

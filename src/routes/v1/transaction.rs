@@ -39,7 +39,7 @@ async fn transaction_get(
     let id = id.into_inner();
     let db = &state.db;
 
-    let slim = Transaction::get(db, id).await?;
+    let slim = Transaction::get_partial(db, id).await?;
 
     Ok(HttpResponse::Ok().json(slim))
 }
@@ -63,6 +63,11 @@ async fn transaction_create(
     let recipient = Wallet::get_by_address(db, details.to)
         .await?
         .ok_or_else(|| KromerError::Wallet(WalletError::NotFound))?;
+
+    // Make sure to check the request to see if the funds are available.
+    if sender.balance < details.amount {
+        return Err(KromerError::Transaction(TransactionError::InsufficientFunds))
+    }
 
     let creation_data = TransactionCreateData {
         from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
