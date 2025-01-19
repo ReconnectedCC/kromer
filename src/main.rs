@@ -7,6 +7,7 @@ use kromer::websockets::token_cache::TokenCache;
 use kromer::websockets::ws_manager::WsDataManager;
 use kromer::websockets::ws_server::WsServer;
 use surrealdb::opt::auth::Root;
+use surrealdb_migrations::MigrationRunner;
 
 use kromer::database::db::{ConnectionOptions, Database};
 use kromer::{errors::KromerError, routes, AppState};
@@ -44,6 +45,12 @@ async fn main() -> Result<(), KromerError> {
     };
 
     let db = Database::connect(&surreal_endpoint, &connect_options).await?;
+
+    // Perform migrations
+    MigrationRunner::new(&db)
+        .up()
+        .await
+        .expect("Failed to apply SurrealDB Migrations");
 
     let db_arc = Arc::new(db);
 
