@@ -2,6 +2,7 @@ pub mod addresses;
 pub mod auth;
 pub mod blocks;
 pub mod error;
+pub mod misc;
 pub mod motd;
 pub mod names;
 pub mod transactions;

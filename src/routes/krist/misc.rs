@@ -1,6 +1,7 @@
 use actix_web::{get, post, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
+use crate::models::misc::WalletVersionResponse;
 use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo};
 use crate::AppState;
 use crate::{
@@ -75,6 +76,16 @@ async fn get_motd() -> HttpResponse {
     };
 
     HttpResponse::Ok().json(motd)
+}
+
+#[get("/walletversion")]
+async fn get_walletversion() -> HttpResponse {
+    let response = WalletVersionResponse {
+        ok: true,
+        wallet_version: 3,
+    };
+
+    HttpResponse::Ok().json(response)
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
