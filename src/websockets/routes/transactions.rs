@@ -21,13 +21,13 @@ pub async fn make_transaction(
     let mut outgoing_message: OutgoingWebSocketMessage = OutgoingWebSocketMessage {
         ok: Some(false),
         id: msg_id.clone(),
-        message: WebSocketMessageType::Response { 
+        message: WebSocketMessageType::Response {
             message: ResponseMessageType::Me { is_guest: true, address: None }
         }
     };
 
     if amount.is_some() && private_key.is_some() && to.is_some() {
-        // Unwrap is fine because we checked it. 
+        // Unwrap is fine because we checked it.
         let amount = amount.unwrap();
         let private_key = private_key.unwrap();
         let to = to.unwrap();
@@ -39,50 +39,47 @@ pub async fn make_transaction(
 
         else if let Ok(Some(sender)) = Wallet::verify(db, private_key).await {
             if let Ok(Some(recipient)) = Wallet::get_by_address(db, to.to_string()).await {
-                tracing::debug!("SENDER: {:?}", sender);
-                tracing::debug!("RECIPIENT: {:?}", recipient);
-                // Make sure to check the request to see if the funds are available.
-                if sender.balance < amount {
-                    outgoing_message = format_insufficient_funds_error(msg_id.clone())
-                } else {
-                // Create the data
-                let creation_data = TransactionCreateData {
-                    from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
-                    to: recipient.id.unwrap(),
-                    amount: amount,
-                    metadata: metadata.clone(),
-                    transaction_type: TransactionType::Transfer,
-                };
-                let response = db.insert("transaction").content(creation_data).await;
+                    tracing::debug!("SENDER: {:?}", sender);
+                    tracing::debug!("RECIPIENT: {:?}", recipient);
+                    // Make sure to check the request to see if the funds are available.
+                    if sender.balance < amount {
+                        outgoing_message = format_insufficient_funds_error(msg_id.clone())
+                    } else {
+                    // Create the data
+                    let creation_data = TransactionCreateData {
+                        from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
+                        to: recipient.id.unwrap(),
+                        amount: amount,
+                        metadata: metadata.clone(),
+                        transaction_type: TransactionType::Transfer,
+                    };
+                    let response = db.insert("transaction").content(creation_data).await;
 
-                if response.is_ok() {
-                    let _response: Vec<Transaction> = response.unwrap();
+                    if response.is_ok() {
+                        let _response: Vec<Transaction> = response.unwrap();
 
-                    let time = convert_to_iso_string(chrono::offset::Utc::now());
-                    outgoing_message = OutgoingWebSocketMessage {
-                        ok: Some(true),
-                        id: msg_id,
-                        message: WebSocketMessageType::Response {
-                            message: ResponseMessageType::MakeTransaction {
-                                from: sender.address,
-                                to: recipient.address,
-                                value: amount,
-                                time,
-                                name: None,
-                                metadata: metadata,
-                                sent_metaname: None,
-                                sent_name: None,
-                                transaction_type: "transfer".to_string(),
+                        let time = convert_to_iso_string(chrono::offset::Utc::now());
+                        outgoing_message = OutgoingWebSocketMessage {
+                            ok: Some(true),
+                            id: msg_id,
+                            message: WebSocketMessageType::Response {
+                                message: ResponseMessageType::MakeTransaction {
+                                    from: sender.address,
+                                    to: recipient.address,
+                                    value: amount,
+                                    time,
+                                    name: None,
+                                    metadata: metadata,
+                                    sent_metaname: None,
+                                    sent_name: None,
+                                    transaction_type: "transfer".to_string(),
+                                }
                             }
-                         }
+                        }
+                    } else {
+                        outgoing_message = format_database_error(msg_id);
                     }
-                } else {
-                    outgoing_message = format_database_error(msg_id);
                 }
-
-   
-                }
-
             } else {
                 outgoing_message = format_not_found_error(msg_id, to);
             }
