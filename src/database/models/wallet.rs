@@ -5,7 +5,7 @@ use surrealdb::{
     Surreal,
 };
 
-use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal::Decimal;
 
 use super::{serialize_table_opt, CountResponse};
 use crate::routes::PaginationParams;

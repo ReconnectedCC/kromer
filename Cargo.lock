@@ -2405,6 +2405,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "sha2",
  "surrealdb",
  "surrealdb-migrations",
  "thiserror 2.0.11",

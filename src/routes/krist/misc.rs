@@ -1,13 +1,13 @@
 use actix_web::{get, post, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
-use crate::models::misc::{MoneySupplyResponse, WalletVersionResponse};
+use crate::models::misc::{MoneySupplyResponse, PrivateKeyAddressResponse, WalletVersionResponse};
 use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo};
-use crate::AppState;
 use crate::{
     errors::krist::KristError,
     models::auth::{AddressAuthenticationResponse, LoginDetails},
 };
+use crate::{utils, AppState};
 
 #[post("/login")]
 async fn login_address(
@@ -98,11 +98,23 @@ async fn get_kromer_supply(state: web::Data<AppState>) -> Result<HttpResponse, K
     Ok(HttpResponse::Ok().json(response))
 }
 
+#[post("/v2")]
+async fn get_v2_address(query: web::Json<LoginDetails>) -> Result<HttpResponse, KristError> {
+    let query = query.into_inner();
+    let key = query.private_key;
+
+    let address = utils::crypto::make_v2_address(&key, "k");
+    let response = PrivateKeyAddressResponse { address, ok: true };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
             .service(login_address)
             .service(get_motd)
-            .service(get_kromer_supply),
+            .service(get_kromer_supply)
+            .service(get_v2_address),
     );
 }

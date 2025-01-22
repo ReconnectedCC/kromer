@@ -13,3 +13,9 @@ pub struct MoneySupplyResponse {
     pub ok: bool,
     pub supply: Decimal,
 }
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct PrivateKeyAddressResponse {
+    pub ok: bool,
+    pub address: String,
+}

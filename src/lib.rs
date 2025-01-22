@@ -9,6 +9,7 @@ pub mod errors;
 pub mod guards;
 pub mod models;
 pub mod routes;
+pub mod utils;
 pub mod websockets;
 
 #[derive(Debug)]

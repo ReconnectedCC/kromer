@@ -1,4 +1,4 @@
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 pub fn sha256(input: &str) -> String {
     let mut hasher = Sha256::new();
@@ -37,7 +37,7 @@ pub fn make_v2_address(key: &str, address_prefix: &str) -> String {
     }
 
     let mut i = 0;
-    while i < 9 {
+    while i < 8 {
         let index = usize::from_str_radix(&hash[(2 * i)..(2 + 2 * i)], 16);
         if index.is_ok() {
             let index = index.unwrap() % 9;
