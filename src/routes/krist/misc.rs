@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
-use crate::models::misc::WalletVersionResponse;
+use crate::models::misc::{MoneySupplyResponse, WalletVersionResponse};
 use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo};
 use crate::AppState;
 use crate::{
@@ -88,6 +88,21 @@ async fn get_walletversion() -> HttpResponse {
     HttpResponse::Ok().json(response)
 }
 
+#[get("/supply")]
+async fn get_kromer_supply(state: web::Data<AppState>) -> Result<HttpResponse, KristError> {
+    let db = &state.db;
+    let supply = Wallet::supply(&db).await?;
+
+    let response = MoneySupplyResponse { ok: true, supply };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("").service(login_address).service(get_motd));
+    cfg.service(
+        web::scope("")
+            .service(login_address)
+            .service(get_motd)
+            .service(get_kromer_supply),
+    );
 }

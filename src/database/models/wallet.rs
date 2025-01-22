@@ -1,10 +1,11 @@
+use rust_decimal_macros::dec;
 use surrealdb::{
     engine::any::Any,
     sql::{Datetime, Id, Thing},
     Surreal,
 };
 
-use rust_decimal::Decimal;
+use rust_decimal::{prelude::FromPrimitive, Decimal};
 
 use super::{serialize_table_opt, CountResponse};
 use crate::routes::PaginationParams;
@@ -151,5 +152,16 @@ impl Model {
         let count = count.unwrap_or_default(); // Its fine, we make sure we always get a response with the `or` statement in the query.
 
         Ok(count.count)
+    }
+
+    /// Get the total amount of kromer held by wallets
+    pub async fn supply(db: &Surreal<Any>) -> Result<Decimal, surrealdb::Error> {
+        let q = "RETURN math::sum((SELECT balance FROM wallet).balance);";
+
+        let mut response = db.query(q).await?;
+        let supply: Option<Decimal> = response.take(0)?;
+        let supply = supply.unwrap_or_else(|| dec!(0));
+
+        Ok(supply)
     }
 }
