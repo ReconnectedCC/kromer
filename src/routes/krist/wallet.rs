@@ -48,7 +48,7 @@ async fn wallet_get(
         .ok_or_else(|| KristError::Address(AddressError::NotFound(address)))
 }
 
-#[get("/richest")]
+#[get("/rich")]
 async fn wallet_richest(
     state: web::Data<AppState>,
     pagination: web::Query<PaginationParams>,
