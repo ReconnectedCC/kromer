@@ -18,20 +18,13 @@ async fn login_address(
     let query = query.into_inner();
 
     let private_key = query.private_key;
-    let result = Wallet::verify(&db, private_key).await?;
+    let result = Wallet::verify_address(db, private_key).await?;
 
-    match result {
-        Some(model) => Ok(HttpResponse::Ok().json(AddressAuthenticationResponse {
-            address: Some(model.address),
-            authed: true,
-            ok: true,
-        })),
-        None => Ok(HttpResponse::Ok().json(AddressAuthenticationResponse {
-            address: None,
-            authed: false,
-            ok: true,
-        })),
-    }
+    Ok(HttpResponse::Ok().json(AddressAuthenticationResponse {
+        address: result.authed.then(|| result.address.address),
+        authed: result.authed,
+        ok: true,
+    }))
 }
 
 #[get("/motd")]

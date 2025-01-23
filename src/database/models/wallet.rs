@@ -8,7 +8,7 @@ use surrealdb::{
 use rust_decimal::Decimal;
 
 use super::{serialize_table_opt, CountResponse};
-use crate::routes::PaginationParams;
+use crate::{routes::PaginationParams, utils};
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Model {
@@ -25,6 +25,12 @@ pub struct Model {
     pub is_shared: bool,
     pub total_in: Decimal,
     pub total_out: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct VerifyResponse {
+    pub authed: bool,
+    pub address: Model,
 }
 
 impl Model {
@@ -81,6 +87,28 @@ impl Model {
         let q = "SELECT * OMIT id, hash from wallet WHERE address = $address;";
 
         let mut response = db.query(q).bind(("address", address)).await?;
+        let model: Option<Model> = response.take(0)?;
+
+        Ok(model)
+    }
+
+    /// Create a new wallet with a given address and hash
+    pub async fn create(
+        db: &Surreal<Any>,
+        address: String,
+        hash: String,
+        initial_bal: Option<Decimal>,
+    ) -> Result<Option<Model>, surrealdb::Error> {
+        let initial_bal = initial_bal.unwrap_or(dec!(100));
+        let q = "RETURN fn::create_wallet_ext($address, $hash, $initial_bal)";
+
+        // NOTE: We could use `.create`, dont know if we should.
+        let mut response = db
+            .query(q)
+            .bind(("address", address))
+            .bind(("hash", hash))
+            .bind(("initial_bal", initial_bal))
+            .await?;
         let model: Option<Model> = response.take(0)?;
 
         Ok(model)
@@ -163,5 +191,44 @@ impl Model {
         let supply = supply.unwrap_or_else(|| dec!(0));
 
         Ok(supply)
+    }
+
+    #[tracing::instrument(skip(db))]
+    pub async fn verify_address<S: AsRef<str> + std::fmt::Debug>(
+        db: &Surreal<Any>,
+        private_key: S,
+    ) -> Result<VerifyResponse, surrealdb::Error> {
+        let private_key = private_key.as_ref();
+
+        let address = utils::crypto::make_v2_address(private_key, "k");
+        tracing::info!("Authentication attempt on address {address}");
+
+        // TODO: Fix the fucking api definition so it doesnt require an owned copy.
+        let result = Model::get_by_address(db, address.clone()).await?;
+        let hash = utils::crypto::sha256(private_key);
+
+        if result.is_none() {
+            let model = Model::create(db, address, hash, Some(dec!(0))).await?;
+            let model = model.expect("for some fucking reason, model is none."); // TODO: Figure out if it actually errors or not.
+            tracing::debug!("Created a new wallet with an initial balance of 0");
+
+            return Ok(VerifyResponse {
+                authed: true,
+                address: model,
+            });
+        }
+
+        let wallet = result.unwrap(); // It's fine to unwrap here, see above if statement, we checked if it exists or not.
+        let pkey = &wallet.hash;
+        let authed = *pkey == Some(hash); // Cursed i know, it makes the borrow checker happy.
+
+        if authed == false {
+            tracing::info!("Someone tried to login to an address they do not own");
+        }
+
+        return Ok(VerifyResponse {
+            authed,
+            address: wallet,
+        });
     }
 }
