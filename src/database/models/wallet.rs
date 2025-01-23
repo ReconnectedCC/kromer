@@ -201,11 +201,13 @@ impl Model {
         let private_key = private_key.as_ref();
 
         let address = utils::crypto::make_v2_address(private_key, "k");
+        let guh = format!("{address}{private_key}"); // SO CURSED I LOVE IT
+
         tracing::info!("Authentication attempt on address {address}");
 
         // TODO: Fix the fucking api definition so it doesnt require an owned copy.
         let result = Model::get_by_address(db, address.clone()).await?;
-        let hash = utils::crypto::sha256(private_key);
+        let hash = utils::crypto::sha256(&guh);
 
         if result.is_none() {
             let model = Model::create(db, address, hash, Some(dec!(0))).await?;
