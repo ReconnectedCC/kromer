@@ -49,7 +49,7 @@ const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 pub async fn handle_ws(
     state: Data<AppState>,
     wrapped_ws_data: WrappedWsData,
-    ws_server: WsServerHandle,
+    ws_server_handle: WsServerHandle,
     mut session: actix_ws::Session,
     msg_stream: actix_ws::MessageStream,
 ) -> Result<(), KromerError> {
@@ -62,7 +62,7 @@ pub async fn handle_ws(
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
 
     // Internally, the WsServer uses a channel ID to facilitate sending messages.
-    let channel_id = match ws_server.connect(conn_tx, wrapped_ws_data.token).await {
+    let channel_id = match ws_server_handle.connect(conn_tx, wrapped_ws_data.token).await {
         Ok(value) => value,
         Err(_) => return Err(KromerError::WebSocket(WebSocketError::HandshakeError)),
     };
@@ -73,7 +73,7 @@ pub async fn handle_ws(
         .max_continuation_size(2 * 1024 * 1024);
 
     let (_keepalive_join_handle, keepalive_abort_handle) =
-        spawn_keepalive(ws_server.clone(), channel_id).await;
+        spawn_keepalive(ws_server_handle.clone(), channel_id).await;
 
     let mut msg_stream = pin!(msg_stream);
 
@@ -126,7 +126,7 @@ pub async fn handle_ws(
                             let process_result = process_text_msg(
                                 &state.db,
                                 &ws_metadata,
-                                &ws_server,
+                                &ws_server_handle,
                                 &mut session,
                                 &text,
                             )
@@ -187,7 +187,7 @@ pub async fn handle_ws(
 
     keepalive_abort_handle.abort();
 
-    let _ = ws_server.disconnect(channel_id);
+    let _ = ws_server_handle.disconnect(channel_id);
 
     let _ = session.close(close_reason).await;
 

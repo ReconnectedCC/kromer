@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use actix::spawn;
 //use actix::prelude::*;
 use actix_web::{get, post, HttpRequest, Responder};
 use actix_web::{
@@ -8,7 +9,6 @@ use actix_web::{
 };
 use serde_json::json;
 use surrealdb::Uuid;
-use tokio::task::spawn_local;
 use tokio::time::sleep;
 
 use crate::database::models::wallet::Model as Wallet;
@@ -17,6 +17,7 @@ use crate::websockets::handler::handle_ws;
 use crate::websockets::types::common::WebSocketTokenData;
 use crate::websockets::utils;
 use crate::websockets::wrapped_ws::WrappedWsData;
+use crate::websockets::ws_server::WsServer;
 use crate::AppState;
 
 #[derive(serde::Deserialize)]
@@ -130,15 +131,29 @@ pub async fn gateway(
         .ok_or_else(|| KristError::WebSocket(WebSocketError::InvalidWebsocketToken))?;
     drop(token_cache);
 
-    // Clone a WsServerHandle so that we already have the Server's Command Channel referenced.
-    let ws_server_handle = state.ws_server_handle.clone();
+    // TODO: New implementation a few lines down, spawn it per thread (green threaded)
+    //let ws_server_handle = state.ws_server_handle.clone();
+    
+    // Create the actual handler for the WebSocketSession
     let (response, session, msg_stream) = actix_ws::handle(&req, body)
         .map_err(|_| KristError::WebSocket(WebSocketError::HandshakeError))?;
 
     // Add this data to a struct for easy access to the session information
     let wrapped_ws_data = WrappedWsData::new(uuid, token_params.address, token_params.privatekey);
 
-    spawn_local(handle_ws(
+    // TODO: Verify this spawns a green thread to handle the WS Server
+    let (ws_server, ws_server_handle) = WsServer::new();
+    
+    let ws_server_task = spawn(ws_server.run());
+
+    spawn(async move {
+        if let Err(err) = ws_server_task.await {
+            tracing::error!("WebSocket server error: {:?}", err);
+        }
+    });
+
+    spawn(
+        handle_ws(
         state.clone(),
         wrapped_ws_data,
         ws_server_handle,

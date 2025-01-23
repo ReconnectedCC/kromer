@@ -5,14 +5,12 @@ use actix_web::{middleware, web, App, HttpServer};
 
 use kromer::websockets::token_cache::TokenCache;
 use kromer::websockets::ws_manager::WsDataManager;
-use kromer::websockets::ws_server::WsServer;
 use surrealdb::opt::auth::Root;
 use surrealdb_migrations::MigrationRunner;
 
 use kromer::database::db::{ConnectionOptions, Database};
 use kromer::{errors::KromerError, routes, AppState};
 use tokio::sync::Mutex;
-use tokio::{spawn, try_join};
 
 #[actix_web::main]
 async fn main() -> Result<(), KromerError> {
@@ -54,14 +52,11 @@ async fn main() -> Result<(), KromerError> {
 
     let db_arc = Arc::new(db);
 
-    let (ws_server, ws_server_handle) = WsServer::new();
-    let ws_server = spawn(ws_server.run());
     let token_cache = Arc::new(Mutex::new(TokenCache::new()));
     let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
 
     let state = web::Data::new(AppState {
         db: db_arc,
-        ws_server_handle,
         token_cache,
         ws_manager,
     });
@@ -93,8 +88,7 @@ async fn main() -> Result<(), KromerError> {
     .bind(&server_url)?
     .run();
 
-    // Join the tasks together using tokio.
-    try_join!(http_server, async move { ws_server.await.unwrap() })?;
+    http_server.await?;
 
     Ok(())
 }
