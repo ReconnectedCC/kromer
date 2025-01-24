@@ -344,6 +344,19 @@ async fn process_text_msg(
         _ => {
             // TODO: This is just an example, we should error here with a good error message.
             // We should tell the user there was a syntax error with the type in their message.
+            ws_modification_data = WsSessionModification {
+                msg_type: Some(OutgoingWebSocketMessage {
+                    ok: Some(false),
+                    id: msg_id,
+                    message: WebSocketMessageType::Error {
+                        error: ErrorResponse {
+                            error: "invalid_message_type".to_string(),
+                            message: Some("Invalid message type".to_string())
+                        }
+                    }
+                }),
+                wrapped_ws_data: None
+            }
         }
     };
 
