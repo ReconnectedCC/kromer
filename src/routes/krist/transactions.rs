@@ -6,7 +6,10 @@ use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::address::AddressError;
 use crate::errors::krist::generic::GenericError;
 use crate::errors::krist::{transaction::TransactionError, KristError};
-use crate::models::transactions::{TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse, TransactionType};
+use crate::models::transactions::{
+    TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse,
+    TransactionType,
+};
 use crate::{routes::PaginationParams, AppState};
 
 #[get("")]
@@ -43,11 +46,12 @@ async fn transaction_create(
 
     // Check on the server so DB doesnt throw.
     if details.amount < dec!(0.0) {
-        return Err(KristError::Generic(GenericError::InvalidParameter("amount".to_string())));
+        return Err(KristError::Generic(GenericError::InvalidParameter(
+            "amount".to_string(),
+        )));
     }
 
-    let sender_verify_response = Wallet::verify_address(db, details.password)
-        .await?;
+    let sender_verify_response = Wallet::verify_address(db, details.password).await?;
 
     let sender = sender_verify_response.address;
 
@@ -57,14 +61,12 @@ async fn transaction_create(
 
     // Make sure to check the request to see if the funds are available.
     if sender.balance < details.amount {
-        return Err(KristError::Transaction(
-            TransactionError::InsufficientFunds,
-        ));
+        return Err(KristError::Transaction(TransactionError::InsufficientFunds));
     }
 
     let creation_data = TransactionCreateData {
-        from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
-        to: recipient.id.unwrap(),
+        from: sender.address,
+        to: recipient.address,
         amount: details.amount,
         metadata: details.metadata,
         transaction_type: TransactionType::Transfer,

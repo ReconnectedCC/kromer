@@ -8,8 +8,8 @@ use crate::database::models::wallet::Model as Wallet;
 use crate::errors::transaction::TransactionError;
 use crate::errors::wallet::WalletError;
 use crate::models::addresses::AddressCreationResponse;
-use crate::{errors::KromerError, AppState};
 use crate::utils::crypto::generate_random_password;
+use crate::{errors::KromerError, AppState};
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct MinecraftUser {
@@ -27,7 +27,6 @@ struct GiveMoneyReq {
 struct Guh {
     pub name: String,
 }
-
 
 #[post("/create")]
 async fn wallet_create(
@@ -49,7 +48,7 @@ async fn wallet_create(
     let wallet_verify_resp = Wallet::verify_address(db, password.clone()).await?;
     let wallet = wallet_verify_resp.address;
     let address = wallet.address;
-    
+
     // Set the initial balance to 100 Kromer to start with
     let q = "UPDATE $wallet SET balance += $amount";
     let _ = db
@@ -66,10 +65,7 @@ async fn wallet_create(
         .await?;
     tracing::debug!("Got response: {resp:?}");
 
-    let resp = AddressCreationResponse {
-        password,
-        address,
-    };
+    let resp = AddressCreationResponse { password, address };
 
     Ok(HttpResponse::Ok().json(resp))
 }

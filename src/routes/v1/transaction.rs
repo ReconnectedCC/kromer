@@ -75,8 +75,8 @@ async fn transaction_create(
     }
 
     let creation_data = TransactionCreateData {
-        from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
-        to: recipient.id.unwrap(),
+        from: sender.address,
+        to: recipient.address,
         amount: details.amount,
         metadata: details.metadata,
         transaction_type: TransactionType::Transfer,

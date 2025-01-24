@@ -11,15 +11,11 @@ DEFINE FUNCTION OVERWRITE fn::create_wallet_ext($address: string, $hash: string,
     RETURN $wallet; 
 } PERMISSIONS FULL;
 
-DEFINE FUNCTION OVERWRITE fn::transfer_balance($from: record<wallet>, $to: record<wallet> | record<name>, $amount: decimal) {
-UPDATE $from SET balance -= $amount;
-UPDATE $from SET total_out += $amount;
-RETURN IF record::tb($to) == 'name' {
-LET $owner = $to.owner;
-UPDATE $owner SET balance += $amount;
-UPDATE $owner SET total_in += $amount;
-} ELSE {
-UPDATE $to SET balance += $amount;
-UPDATE $to SET total_in += $amount;
-};
+DEFINE FUNCTION OVERWRITE fn::transfer_balance($from: string, $to: string | record<name>, $amount: decimal) {
+LET $from_wallet = (SELECT * FROM wallet WHERE address == $from).first();
+LET $to_wallet = (SELECT * FROM wallet WHERE address == $to).first();
+UPDATE $from_wallet SET balance -= $amount;
+UPDATE $from_wallet SET total_out += $amount;
+UPDATE $to_wallet SET balance += $amount;
+UPDATE $to_wallet SET total_in += $amount;
 } PERMISSIONS FULL;

@@ -67,10 +67,10 @@ pub const MINING_CONSTANTS: Constants = Constants {
     min_work: 1,
     max_work: 100000,
     work_factor: 0.025,
-    seconds_per_block: 300
+    seconds_per_block: 300,
 };
 
-pub fn get_currency_info() -> CurrencyInfo {    
+pub fn get_currency_info() -> CurrencyInfo {
     CurrencyInfo {
         address_prefix: "k".to_string(),
         name_suffix: "kro".to_string(),
@@ -82,23 +82,30 @@ pub fn get_currency_info() -> CurrencyInfo {
 pub fn get_package_info() -> Result<PackageInfo, std::io::Error> {
     let toml_string = fs::read_to_string("Cargo.toml")?;
     let parsed_toml: toml::Value = toml::from_str(&toml_string).map_err(|err| {
-        std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse Cargo TOML: {}", err))
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Failed to parse Cargo TOML: {}", err),
+        )
     })?;
 
     let get_str_value = |key: &str| -> Result<String, std::io::Error> {
-        parsed_toml.get("package")
+        parsed_toml
+            .get("package")
             .and_then(|pkg| pkg.get(key))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!(
-                "Missing Cargo.toml key: {}", key
-            )))
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Missing Cargo.toml key: {}", key),
+                )
+            })
     };
 
     // Access info from the parsed TOML data
     let name = get_str_value("name")?;
     let version = get_str_value("version")?;
-    let author =  get_str_value("author")?;
+    let author = get_str_value("author")?;
     let license = get_str_value("license")?;
     let repository = get_str_value("repository")?;
 
@@ -107,6 +114,6 @@ pub fn get_package_info() -> Result<PackageInfo, std::io::Error> {
         version,
         author,
         license,
-        repository
-    }) 
+        repository,
+    })
 }

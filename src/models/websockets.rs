@@ -74,12 +74,12 @@ pub enum WebSocketMessageType {
         amount: Option<Decimal>,
         metadata: Option<String>,
         #[serde(rename = "requestId")]
-        request_id: Option<String>
+        request_id: Option<String>,
     },
     Work,
 
     #[serde(other)]
-    Unknown
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]

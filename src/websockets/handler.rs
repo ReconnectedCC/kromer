@@ -13,7 +13,8 @@ use crate::{
         auth::perform_logout,
         subscriptions::{
             get_subscription_level, get_valid_subscription_levels, subscribe, unsubscribe,
-        }, transactions::make_transaction,
+        },
+        transactions::make_transaction,
     },
     AppState,
 };
@@ -62,7 +63,10 @@ pub async fn handle_ws(
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
 
     // Internally, the WsServer uses a channel ID to facilitate sending messages.
-    let channel_id = match ws_server_handle.connect(conn_tx, wrapped_ws_data.token).await {
+    let channel_id = match ws_server_handle
+        .connect(conn_tx, wrapped_ws_data.token)
+        .await
+    {
         Ok(value) => value,
         Err(_) => return Err(KromerError::WebSocket(WebSocketError::HandshakeError)),
     };
@@ -294,9 +298,10 @@ async fn process_text_msg(
             to,
             amount,
             metadata,
-            request_id
+            request_id,
         } => {
-            ws_modification_data = make_transaction(db, msg_id, private_key, to, amount, metadata, request_id).await;
+            ws_modification_data =
+                make_transaction(db, msg_id, private_key, to, amount, metadata, request_id).await;
         }
 
         WebSocketMessageType::Subscribe { event } => {
@@ -355,11 +360,11 @@ async fn process_text_msg(
                     message: WebSocketMessageType::Error {
                         error: ErrorResponse {
                             error: "invalid_message_type".to_string(),
-                            message: Some("Invalid message type".to_string())
-                        }
-                    }
+                            message: Some("Invalid message type".to_string()),
+                        },
+                    },
                 }),
-                wrapped_ws_data: None
+                wrapped_ws_data: None,
             }
         }
     };

@@ -133,7 +133,7 @@ pub async fn gateway(
 
     // TODO: New implementation a few lines down, spawn it per thread (green threaded)
     //let ws_server_handle = state.ws_server_handle.clone();
-    
+
     // Create the actual handler for the WebSocketSession
     let (response, session, msg_stream) = actix_ws::handle(&req, body)
         .map_err(|_| KristError::WebSocket(WebSocketError::HandshakeError))?;
@@ -143,7 +143,7 @@ pub async fn gateway(
 
     // TODO: Verify this spawns a green thread to handle the WS Server
     let (ws_server, ws_server_handle) = WsServer::new();
-    
+
     let ws_server_task = spawn(ws_server.run());
 
     spawn(async move {
@@ -152,8 +152,7 @@ pub async fn gateway(
         }
     });
 
-    spawn(
-        handle_ws(
+    spawn(handle_ws(
         state.clone(),
         wrapped_ws_data,
         ws_server_handle,

@@ -1,6 +1,8 @@
 use chrono::Utc;
 use surrealdb::{
-    engine::any::Any, sql::{Datetime, Id, Thing}, Surreal
+    engine::any::Any,
+    sql::{Datetime, Id, Thing},
+    Surreal,
 };
 
 use super::{serialize_table_opt, CountResponse};
@@ -116,10 +118,10 @@ impl Model {
     ) -> Result<Vec<Model>, surrealdb::Error> {
         let limit = pagination.limit.unwrap_or(50);
         let offset = pagination.offset.unwrap_or(0);
-        let limit = limit.clamp(1,1000);
+        let limit = limit.clamp(1, 1000);
 
         let q = "SELECT * OMIT id from name WHERE unpaid > 0 LIMIT $limit START $offset";
-        
+
         let mut response = db
             .query(q)
             .bind(("limit", limit))
@@ -156,8 +158,7 @@ impl Model {
         name: String,
         owner: String,
     ) -> Result<Option<Model>, surrealdb::Error> {
-
-        let response:Option<Model> = db
+        let response: Option<Model> = db
             .create("name")
             .content(Model {
                 id: None,

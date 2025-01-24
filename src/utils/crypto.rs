@@ -1,5 +1,5 @@
-use sha2::{Digest, Sha256};
 use rand::{distributions::Uniform, thread_rng, Rng};
+use sha2::{Digest, Sha256};
 
 pub fn generate_random_password() -> String {
     // Define the character set, including letters, digits, underscores, and hyphens

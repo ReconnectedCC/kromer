@@ -4,7 +4,18 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use surrealdb::{engine::any::Any, Surreal};
 
-use crate::{database::models::transaction::TransactionCreateData, models::{error::ErrorResponse, transactions::TransactionType, websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType, WsSessionModification}}, websockets::utils::datetime::convert_to_iso_string};
+use crate::{
+    database::models::transaction::TransactionCreateData,
+    models::{
+        error::ErrorResponse,
+        transactions::TransactionType,
+        websockets::{
+            OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType,
+            WsSessionModification,
+        },
+    },
+    websockets::utils::datetime::convert_to_iso_string,
+};
 
 use crate::database::models::transaction::Model as Transaction;
 use crate::database::models::wallet::Model as Wallet;
@@ -22,8 +33,11 @@ pub async fn make_transaction(
         ok: Some(false),
         id: msg_id.clone(),
         message: WebSocketMessageType::Response {
-            message: ResponseMessageType::Me { is_guest: true, address: None }
-        }
+            message: ResponseMessageType::Me {
+                is_guest: true,
+                address: None,
+            },
+        },
     };
 
     if amount.is_some() && private_key.is_some() && to.is_some() {
@@ -35,19 +49,17 @@ pub async fn make_transaction(
         // Check on the server so DB doesnt throw.
         if amount < dec!(0.0) {
             outgoing_message = format_invalid_parameter(msg_id.clone(), "amount".to_string());
-        }
-
-        else if let Ok(verify_response) = Wallet::verify_address(db, private_key).await {
+        } else if let Ok(verify_response) = Wallet::verify_address(db, private_key).await {
             let sender = verify_response.address;
             if let Ok(Some(recipient)) = Wallet::get_by_address(db, to.to_string()).await {
-                    // Make sure to check the request to see if the funds are available.
-                    if sender.balance < amount {
-                        outgoing_message = format_insufficient_funds_error(msg_id.clone())
-                    } else {
+                // Make sure to check the request to see if the funds are available.
+                if sender.balance < amount {
+                    outgoing_message = format_insufficient_funds_error(msg_id.clone())
+                } else {
                     // Create the data
                     let creation_data = TransactionCreateData {
-                        from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
-                        to: recipient.id.unwrap(),
+                        from: sender.address.clone(),
+                        to: recipient.address.clone(),
                         amount: amount,
                         metadata: metadata.clone(),
                         transaction_type: TransactionType::Transfer,
@@ -72,8 +84,8 @@ pub async fn make_transaction(
                                     sent_metaname: None,
                                     sent_name: None,
                                     transaction_type: "transfer".to_string(),
-                                }
-                            }
+                                },
+                            },
                         }
                     } else {
                         outgoing_message = format_database_error(msg_id);
@@ -85,22 +97,17 @@ pub async fn make_transaction(
         } else {
             outgoing_message = format_invalid_parameter(msg_id, "privatekey".to_string())
         }
-    }
-    else if amount.is_none() {
+    } else if amount.is_none() {
         outgoing_message = format_missing_parameter(msg_id, "amount".to_string());
-    }
-    else if private_key.is_none() {
+    } else if private_key.is_none() {
         outgoing_message = format_missing_parameter(msg_id, "privatekey".to_string());
-    }
-    else if to.is_none() {
+    } else if to.is_none() {
         outgoing_message = format_missing_parameter(msg_id, "to".to_string())
     }
     WsSessionModification {
         msg_type: Some(outgoing_message),
-        wrapped_ws_data: None
+        wrapped_ws_data: None,
     }
-
-
 }
 
 fn format_invalid_parameter(msg_id: String, parameter: String) -> OutgoingWebSocketMessage {
@@ -110,9 +117,9 @@ fn format_invalid_parameter(msg_id: String, parameter: String) -> OutgoingWebSoc
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "invalid_parameter".to_string(),
-                message: Some(format!("Invalid parameter {}", parameter).to_string())
-            }
-        }
+                message: Some(format!("Invalid parameter {}", parameter).to_string()),
+            },
+        },
     }
 }
 
@@ -123,9 +130,9 @@ fn format_missing_parameter(msg_id: String, parameter: String) -> OutgoingWebSoc
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "missing_parameter".to_string(),
-                message: Some(format!("Missing parameter {}", parameter).to_string())
-            }
-        }
+                message: Some(format!("Missing parameter {}", parameter).to_string()),
+            },
+        },
     }
 }
 
@@ -137,8 +144,8 @@ fn format_not_found_error(msg_id: String, address: String) -> OutgoingWebSocketM
             error: ErrorResponse {
                 error: "address_not_found".to_string(),
                 message: Some(format!("Address {} not found", address).to_string()),
-            }
-        }
+            },
+        },
     }
 }
 
@@ -149,9 +156,9 @@ fn format_insufficient_funds_error(msg_id: String) -> OutgoingWebSocketMessage {
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "insufficient_funds".to_string(),
-                message: Some("Insufficient funds".to_string())
-            }
-        }
+                message: Some("Insufficient funds".to_string()),
+            },
+        },
     }
 }
 
@@ -162,8 +169,8 @@ fn format_database_error(msg_id: String) -> OutgoingWebSocketMessage {
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "database_error".to_string(),
-                message: Some("Database error".to_string())
-            }
-        }
+                message: Some("Database error".to_string()),
+            },
+        },
     }
 }

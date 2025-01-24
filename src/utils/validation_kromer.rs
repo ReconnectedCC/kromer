@@ -7,15 +7,8 @@ const NAME_RE: &str = r"^[a-z0-9_-]{1,64}$";
 const NAME_A_RECORD_RE: &str = r"^[^\s.?#].[^\s]*$";
 const _NAME_META_RE: &str = r"^(?:([a-z0-9-_]{1,32})@)?([a-z0-9]{1,64})\.kst$";
 
-pub fn is_valid_name(
-    name: String,
-    fetching: bool
-) -> bool {
-    let re = if fetching {
-       NAME_FETCH_RE 
-    } else {
-        NAME_RE
-    };
+pub fn is_valid_name(name: String, fetching: bool) -> bool {
+    let re = if fetching { NAME_FETCH_RE } else { NAME_RE };
 
     // Gonna just unwrap and assume it's okay, just don't break Regex strings pls
     let re = Regex::new(re).unwrap();

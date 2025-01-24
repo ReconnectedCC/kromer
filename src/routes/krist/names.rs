@@ -8,8 +8,10 @@ use crate::errors::krist::address::AddressError;
 use crate::errors::krist::generic::GenericError;
 use crate::errors::krist::transaction::TransactionError;
 use crate::errors::krist::{name::NameError, KristError};
-use crate::models::names::{NameCostResponse, NameJson, NameListResponse, NameResponse, RegisterNameRequest};
 use crate::models::motd::MINING_CONSTANTS;
+use crate::models::names::{
+    NameCostResponse, NameJson, NameListResponse, NameResponse, RegisterNameRequest,
+};
 use crate::models::transactions::TransactionType;
 use crate::utils::validation_kromer::is_valid_name;
 use crate::{routes::PaginationParams, AppState};
@@ -44,36 +46,33 @@ async fn name_list(
 #[get("/check/{name}")]
 async fn name_check(
     state: web::Data<AppState>,
-    name: web::Path<String>
+    name: web::Path<String>,
 ) -> Result<HttpResponse, KristError> {
     let name = name.into_inner();
     let db = &state.db;
 
     if !is_valid_name(name.clone(), true) {
-        return Err(KristError::Generic(GenericError::InvalidParameter("name".to_string())))
+        return Err(KristError::Generic(GenericError::InvalidParameter(
+            "name".to_string(),
+        )));
     }
     let name = clean_name_input(name);
 
     let db_name = Name::get_by_name(db, name).await?;
 
-    Ok(HttpResponse::Ok().json(
-        json!({
-            "ok": true,
-            "available": db_name.is_none()
-        })
-    ))
+    Ok(HttpResponse::Ok().json(json!({
+        "ok": true,
+        "available": db_name.is_none()
+    })))
 }
 
 #[get("/cost")]
-async fn name_cost(
-) -> Result<HttpResponse, KristError> {
+async fn name_cost() -> Result<HttpResponse, KristError> {
     let response = NameCostResponse {
         ok: true,
-        name_cost: MINING_CONSTANTS.name_cost
+        name_cost: MINING_CONSTANTS.name_cost,
     };
-    Ok(HttpResponse::Ok().json(
-        response
-    ))
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[get("/new")]
@@ -83,28 +82,22 @@ async fn name_new(
 ) -> Result<HttpResponse, KristError> {
     let params = query.into_inner();
     let db = &state.db;
-    
+
     let names = Name::all_unpaid(db, &params).await?;
     let names: Vec<NameJson> = names.into_iter().map(|name| name.into()).collect();
 
-    Ok(HttpResponse::Ok().json(
-        names
-    ))
+    Ok(HttpResponse::Ok().json(names))
 }
 
 #[get("/bonus")]
-async fn name_bonus(
-    state: web::Data<AppState>
-) -> Result<HttpResponse, KristError> {
+async fn name_bonus(state: web::Data<AppState>) -> Result<HttpResponse, KristError> {
     let db = &state.db;
     let name_bonus = Name::count_unpaid(db).await?;
 
-    Ok(HttpResponse::Ok().json(
-        json!({
-            "ok": true,
-            "name_bonus": name_bonus
-        })
-    ))
+    Ok(HttpResponse::Ok().json(json!({
+        "ok": true,
+        "name_bonus": name_bonus
+    })))
 }
 
 #[post("/{name}")]
@@ -125,23 +118,31 @@ async fn name_register(
 
     // Manual error handling here
     if private_key.is_none() {
-        return Err(KristError::Generic(GenericError::MissingParameter("privatekey".to_string())))
+        return Err(KristError::Generic(GenericError::MissingParameter(
+            "privatekey".to_string(),
+        )));
     }
     // if desired_name.is_none() {
     //     return Err(KristError::Generic(GenericError::MissingParameter("desiredName".to_string())))
     // }
     if !is_valid_name(name.clone(), false) {
-        return Err(KristError::Generic(GenericError::InvalidParameter("name".to_string())))
+        return Err(KristError::Generic(GenericError::InvalidParameter(
+            "name".to_string(),
+        )));
     }
 
     let verify_addr_resp = Wallet::verify_address(
-        db, 
+        db,
         // Unwrap should be okay
-        private_key.unwrap().clone())
-        .await?;
+        private_key.unwrap().clone(),
+    )
+    .await?;
 
     if !verify_addr_resp.authed {
-        tracing::info!("Name registration REJECTED for {}", verify_addr_resp.address.address);
+        tracing::info!(
+            "Name registration REJECTED for {}",
+            verify_addr_resp.address.address
+        );
         return Err(KristError::Address(AddressError::AuthFailed));
     }
 
@@ -149,15 +150,13 @@ async fn name_register(
 
     // Reject insufficient funds
     if verify_addr_resp.address.balance < new_name_cost {
-        return Err(KristError::Transaction(TransactionError::InsufficientFunds))
+        return Err(KristError::Transaction(TransactionError::InsufficientFunds));
     }
 
-    
-
-    // Create the transaction 
+    // Create the transaction
     let creation_data = TransactionCreateData {
-        from: verify_addr_resp.address.id.clone().unwrap(), // `unwrap` should be fine here, we already made sure it exists.
-        to: verify_addr_resp.address.id.unwrap(),
+        from: verify_addr_resp.address.address.clone(),
+        to: "name".to_string(),
         amount: new_name_cost,
         metadata: None,
         transaction_type: TransactionType::NamePurchase,
@@ -165,14 +164,13 @@ async fn name_register(
     let _trans_response: Vec<Transaction> = db.insert("transaction").content(creation_data).await?;
 
     // Create the new name
-    let _name_response = Name::register_name(db, name.clone(), verify_addr_resp.address.address).await?;
+    let _name_response =
+        Name::register_name(db, name.clone(), verify_addr_resp.address.address).await?;
 
-    Ok(HttpResponse::Ok().json(
-        json!({
-            "ok": true,
-            "name": name
-        })
-    ))
+    Ok(HttpResponse::Ok().json(json!({
+        "ok": true,
+        "name": name
+    })))
 }
 
 #[get("/{name}")]
@@ -185,12 +183,13 @@ async fn name_get(
 
     let db_name = Name::get_by_name(db, name.clone()).await?;
 
-    db_name.map(|name| NameResponse {
-        ok: true,
-        name: name.into()
-    })
-    .map(|response| HttpResponse::Ok().json(response))
-    .ok_or_else(|| KristError::Name(NameError::NameNotFound(name)))
+    db_name
+        .map(|name| NameResponse {
+            ok: true,
+            name: name.into(),
+        })
+        .map(|response| HttpResponse::Ok().json(response))
+        .ok_or_else(|| KristError::Name(NameError::NameNotFound(name)))
 
     // Ok(HttpResponse::Ok().json(
     //     json!({
@@ -219,13 +218,14 @@ async fn name_get(
 // }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/names")
-    .service(name_list)
-    .service(name_cost)
-    .service(name_check)
-    .service(name_bonus)
-    .service(name_new)
-    .service(name_get)
-    .service(name_register));
+    cfg.service(
+        web::scope("/names")
+            .service(name_list)
+            .service(name_cost)
+            .service(name_check)
+            .service(name_bonus)
+            .service(name_new)
+            .service(name_get)
+            .service(name_register),
+    );
 }
-
