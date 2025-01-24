@@ -7,8 +7,9 @@ use surrealdb::{
 
 use rust_decimal::Decimal;
 
+use super::{name, transaction};
 use super::{serialize_table_opt, CountResponse};
-use crate::{routes::PaginationParams, utils};
+use crate::{models::transactions::AddressTransactionQuery, routes::PaginationParams, utils};
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Model {
@@ -233,5 +234,55 @@ impl Model {
             authed,
             address: wallet,
         });
+    }
+
+    /// Get all transaction made by an address or send by an address
+    pub async fn transactions<S: AsRef<str>>(
+        db: &Surreal<Any>,
+        address: S,
+        query: &AddressTransactionQuery,
+    ) -> Result<Vec<transaction::Model>, surrealdb::Error> {
+        let address = address.as_ref().to_owned();
+
+        let limit = query.limit.unwrap_or(50);
+        let offset = query.offset.unwrap_or(0);
+        let limit = limit.clamp(1, 1000);
+
+        let q = "SELECT * FROM transaction WHERE from = $address OR to = $address ORDER BY timestamp DESC LIMIT $limit START $offset;";
+
+        let mut response = db
+            .query(q)
+            .bind(("address", address))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
+            .await?;
+        let models: Vec<transaction::Model> = response.take(0)?;
+
+        Ok(models)
+    }
+
+    /// Get all names owned by an address
+    pub async fn names<S: AsRef<str>>(
+        db: &Surreal<Any>,
+        address: S,
+        query: &PaginationParams,
+    ) -> Result<Vec<name::Model>, surrealdb::Error> {
+        let address = address.as_ref().to_owned();
+
+        let limit = query.limit.unwrap_or(50);
+        let offset = query.offset.unwrap_or(0);
+        let limit = limit.clamp(1, 1000);
+
+        let q = "SELECT * FROM name WHERE owner = $address ORDER BY name ASC LIMIT $limit START $offset;";
+
+        let mut response = db
+            .query(q)
+            .bind(("address", address))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
+            .await?;
+        let models: Vec<name::Model> = response.take(0)?;
+
+        Ok(models)
     }
 }

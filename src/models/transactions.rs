@@ -31,6 +31,14 @@ pub struct TransactionResponse {
     pub transaction: TransactionJson,
 }
 
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct AddressTransactionQuery {
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+    #[serde(rename = "includeMined")]
+    pub include_mined: Option<bool>,
+}
+
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct TransactionJson {
     /// The ID of this transaction.

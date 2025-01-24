@@ -1,10 +1,10 @@
 use actix_web::{get, web, HttpResponse};
 
-use crate::database::models::transaction::Model as Transaction;
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::{address::AddressError, KristError};
 use crate::models::addresses::{AddressJson, AddressListResponse, AddressResponse};
-use crate::models::transactions::TransactionJson;
+use crate::models::names::NameJson;
+use crate::models::transactions::{AddressTransactionQuery, TransactionJson};
 use crate::{routes::PaginationParams, AppState};
 
 #[get("")]
@@ -77,11 +77,13 @@ async fn wallet_richest(
 async fn wallet_get_transactions(
     state: web::Data<AppState>,
     address: web::Path<String>,
+    params: web::Query<AddressTransactionQuery>,
 ) -> Result<HttpResponse, KristError> {
     let address = address.into_inner();
+    let params = params.into_inner();
     let db = &state.db;
 
-    let transactions = Transaction::by_address(db, address).await?;
+    let transactions = Wallet::transactions(db, address, &params).await?;
     let transactions: Vec<TransactionJson> =
         transactions.into_iter().map(|trans| trans.into()).collect();
 
@@ -90,15 +92,18 @@ async fn wallet_get_transactions(
 
 #[get("/{address}/names")]
 async fn wallet_get_names(
-    _state: web::Data<AppState>,
-    _address: web::Path<String>,
+    state: web::Data<AppState>,
+    address: web::Path<String>,
+    params: web::Query<PaginationParams>,
 ) -> Result<HttpResponse, KristError> {
-    // let address = address.into_inner();
-    // let db = &state.db;
+    let address = address.into_inner();
+    let params = params.into_inner();
+    let db = &state.db;
 
-    // let wallet = Wallet::get_by_address_excl(db, address).await?;
+    let names = Wallet::names(db, address, &params).await?;
+    let names: Vec<NameJson> = names.into_iter().map(|name| name.into()).collect();
 
-    todo!("Not yet implemented, unsure how to approach")
+    Ok(HttpResponse::Ok().json(names))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {

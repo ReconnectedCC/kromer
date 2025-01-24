@@ -9,7 +9,10 @@ use surrealdb::{
 use rust_decimal::Decimal;
 
 use super::{serialize_table_opt, CountResponse};
-use crate::{models::transactions::TransactionType, routes::PaginationParams};
+use crate::{
+    models::transactions::{AddressTransactionQuery, TransactionType},
+    routes::PaginationParams,
+};
 
 static KST_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?:([a-z0-9-_]{1,32})@)?([a-z0-9]{1,64})\.kst").unwrap());
@@ -127,21 +130,6 @@ impl Model {
             .bind(("limit", limit))
             .bind(("offset", offset))
             .await?;
-        let models: Vec<Model> = response.take(0)?;
-
-        Ok(models)
-    }
-
-    /// Get all transaction made by an address or send by an address
-    pub async fn by_address<S: AsRef<str>>(
-        db: &Surreal<Any>,
-        address: S,
-    ) -> Result<Vec<Model>, surrealdb::Error> {
-        let address = address.as_ref().to_owned();
-
-        let q = "SELECT * FROM transaction WHERE from = $address OR to = $address";
-
-        let mut response = db.query(q).bind(("address", address)).await?;
         let models: Vec<Model> = response.take(0)?;
 
         Ok(models)
