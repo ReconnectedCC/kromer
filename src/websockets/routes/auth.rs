@@ -20,23 +20,19 @@ pub async fn perform_login(
 
     // Check the wallet to verify
     let privatekey = login_details.private_key;
-    let wallet = Wallet::verify(&db, privatekey.clone())
+    let wallet = Wallet::verify_address(&db, privatekey.clone())
         .await
         .map_err(|_| KromerError::Wallet(WalletError::InvalidPassword))?;
 
-    if let Some(wallet) = wallet {
-        let address = wallet.address.clone();
-        let new_ws_data = WrappedWsData {
-            address,
-            privatekey: Some(privatekey),
-            ..ws_metadata.to_owned()
-        };
-        let wallet: AddressJson = wallet.into();
-        return Ok((new_ws_data, wallet));
-    }
-
-    // Base fail case
-    Err(KromerError::Wallet(WalletError::InvalidPassword))
+    let wallet = wallet.address;
+    let address = wallet.address.clone();
+    let new_ws_data = WrappedWsData {
+        address,
+        privatekey: Some(privatekey),
+        ..ws_metadata.to_owned()
+    };
+    let wallet: AddressJson = wallet.into();
+    return Ok((new_ws_data, wallet));
 }
 
 pub async fn perform_logout(ws_metadata: &WrappedWsData) -> WrappedWsData {
