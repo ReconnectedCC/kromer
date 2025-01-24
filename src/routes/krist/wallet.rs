@@ -1,8 +1,10 @@
 use actix_web::{get, web, HttpResponse};
 
+use crate::database::models::transaction::Model as Transaction;
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::{address::AddressError, KristError};
 use crate::models::addresses::{AddressJson, AddressListResponse, AddressResponse};
+use crate::models::transactions::TransactionJson;
 use crate::{routes::PaginationParams, AppState};
 
 #[get("")]
@@ -73,15 +75,17 @@ async fn wallet_richest(
 
 #[get("/{address}/transactions")]
 async fn wallet_get_transactions(
-    _state: web::Data<AppState>,
-    _address: web::Path<String>,
+    state: web::Data<AppState>,
+    address: web::Path<String>,
 ) -> Result<HttpResponse, KristError> {
-    // let address = address.into_inner();
-    // let db = &state.db;
+    let address = address.into_inner();
+    let db = &state.db;
 
-    // let wallet = Wallet::get_by_address_excl(db, address).await?;
+    let transactions = Transaction::by_address(db, address).await?;
+    let transactions: Vec<TransactionJson> =
+        transactions.into_iter().map(|trans| trans.into()).collect();
 
-    todo!("Not yet implemented, new method required on transaction model")
+    Ok(HttpResponse::Ok().json(transactions))
 }
 
 #[get("/{address}/names")]

@@ -131,6 +131,21 @@ impl Model {
 
         Ok(models)
     }
+
+    /// Get all transaction made by an address or send by an address
+    pub async fn by_address<S: AsRef<str>>(
+        db: &Surreal<Any>,
+        address: S,
+    ) -> Result<Vec<Model>, surrealdb::Error> {
+        let address = address.as_ref().to_owned();
+
+        let q = "SELECT * FROM transaction WHERE from = $address OR to = $address";
+
+        let mut response = db.query(q).bind(("address", address)).await?;
+        let models: Vec<Model> = response.take(0)?;
+
+        Ok(models)
+    }
 }
 
 impl TransactionNameData {
