@@ -37,10 +37,9 @@ pub async fn make_transaction(
             outgoing_message = format_invalid_parameter(msg_id.clone(), "amount".to_string());
         }
 
-        else if let Ok(Some(sender)) = Wallet::verify(db, private_key).await {
+        else if let Ok(verify_response) = Wallet::verify_address(db, private_key).await {
+            let sender = verify_response.address;
             if let Ok(Some(recipient)) = Wallet::get_by_address(db, to.to_string()).await {
-                    tracing::debug!("SENDER: {:?}", sender);
-                    tracing::debug!("RECIPIENT: {:?}", recipient);
                     // Make sure to check the request to see if the funds are available.
                     if sender.balance < amount {
                         outgoing_message = format_insufficient_funds_error(msg_id.clone())
