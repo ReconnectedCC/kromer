@@ -2400,6 +2400,7 @@ dependencies = [
  "futures-util",
  "names",
  "once_cell",
+ "rand",
  "regex",
  "rust_decimal",
  "rust_decimal_macros",

@@ -7,7 +7,9 @@ use crate::database::models::player::Model as Player;
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::transaction::TransactionError;
 use crate::errors::wallet::WalletError;
+use crate::models::addresses::AddressCreationResponse;
 use crate::{errors::KromerError, AppState};
+use crate::utils::crypto::generate_random_password;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct MinecraftUser {
@@ -26,12 +28,6 @@ struct Guh {
     pub name: String,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-struct WalletCreateResp {
-    pub address: String,
-    pub password: String,
-    pub wallet: Wallet,
-}
 
 #[post("/create")]
 async fn wallet_create(
@@ -48,23 +44,32 @@ async fn wallet_create(
         .await?;
     let player = player.ok_or_else(|| KromerError::Internal("Unable to get created player"))?;
 
-    let mut resp = db.query("RETURN fn::create_wallet(100);").await?;
-    let wallet: Option<WalletCreateResp> = resp.take(0)?;
-    let wallet = wallet.ok_or_else(|| KromerError::Internal("Unable to get created wallet"))?;
+    // Make V2 address based off randomly generated privatekey
+    let password = generate_random_password();
+    let wallet_verify_resp = Wallet::verify_address(db, password.clone()).await?;
+    let wallet = wallet_verify_resp.address;
+    let address = wallet.address;
+    
+    // Set the initial balance to 100 Kromer to start with
+    let q = "UPDATE $wallet SET balance += $amount";
+    let _ = db
+        .query(q)
+        .bind(("wallet", wallet.id.clone().unwrap()))
+        .bind(("amount", dec!(100)))
+        .await?;
 
     let q = "RELATE $player->owns->$wallet";
     let resp = db
         .query(q)
         .bind(("player", player.id.unwrap()))
-        .bind(("wallet", wallet.wallet.id.unwrap()))
+        .bind(("wallet", wallet.id.unwrap()))
         .await?;
     tracing::debug!("Got response: {resp:?}");
 
-    // Yeah i dont like this either
-    let resp = json!({
-        "password": wallet.password,
-        "address": wallet.address
-    });
+    let resp = AddressCreationResponse {
+        password,
+        address,
+    };
 
     Ok(HttpResponse::Ok().json(resp))
 }

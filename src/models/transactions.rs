@@ -18,6 +18,14 @@ pub struct TransactionListResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct TransactionDetails {
+    pub password: String,
+    pub to: String,
+    pub amount: Decimal,
+    pub metadata: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct TransactionResponse {
     pub ok: bool,
     pub transaction: TransactionJson,

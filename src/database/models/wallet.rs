@@ -25,6 +25,7 @@ pub struct Model {
     pub is_shared: bool,
     pub total_in: Decimal,
     pub total_out: Decimal,
+    pub locked: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

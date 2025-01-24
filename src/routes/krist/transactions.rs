@@ -1,8 +1,12 @@
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
+use rust_decimal_macros::dec;
 
-use crate::database::models::transaction::Model as Transaction;
+use crate::database::models::transaction::{Model as Transaction, TransactionCreateData};
+use crate::database::models::wallet::Model as Wallet;
+use crate::errors::krist::address::AddressError;
+use crate::errors::krist::generic::GenericError;
 use crate::errors::krist::{transaction::TransactionError, KristError};
-use crate::models::transactions::{TransactionJson, TransactionListResponse, TransactionResponse};
+use crate::models::transactions::{TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse, TransactionType};
 use crate::{routes::PaginationParams, AppState};
 
 #[get("")]
@@ -25,6 +29,48 @@ async fn transaction_list(
         total,
         transactions,
     };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
+#[post("")]
+async fn transaction_create(
+    state: web::Data<AppState>,
+    details: web::Json<TransactionDetails>,
+) -> Result<HttpResponse, KristError> {
+    let details = details.into_inner();
+    let db = &state.db;
+
+    // Check on the server so DB doesnt throw.
+    if details.amount < dec!(0.0) {
+        return Err(KristError::Generic(GenericError::InvalidParameter("amount".to_string())));
+    }
+
+    let sender_verify_response = Wallet::verify_address(db, details.password)
+        .await?;
+
+    let sender = sender_verify_response.address;
+
+    let recipient = Wallet::get_by_address(db, details.to.clone())
+        .await?
+        .ok_or_else(|| KristError::Address(AddressError::NotFound(details.to)))?;
+
+    // Make sure to check the request to see if the funds are available.
+    if sender.balance < details.amount {
+        return Err(KristError::Transaction(
+            TransactionError::InsufficientFunds,
+        ));
+    }
+
+    let creation_data = TransactionCreateData {
+        from: sender.id.unwrap(), // `unwrap` should be fine here, we already made sure it exists.
+        to: recipient.id.unwrap(),
+        amount: details.amount,
+        metadata: details.metadata,
+        transaction_type: TransactionType::Transfer,
+    };
+    let response: Vec<Transaction> = db.insert("transaction").content(creation_data).await?;
+    let response = response.first().unwrap(); // the fuck man
 
     Ok(HttpResponse::Ok().json(response))
 }
@@ -74,6 +120,7 @@ async fn transaction_get(
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/transactions")
+            .service(transaction_create)
             .service(transaction_latest)
             .service(transaction_get)
             .service(transaction_list),

@@ -6,6 +6,11 @@ LET $wallet = (CREATE wallet CONTENT { address: $address, balance: $initial_bala
 RETURN { address: $address, password: $password, wallet: $wallet.first() };
 } PERMISSIONS FULL;
 
+DEFINE FUNCTION OVERWRITE fn::create_wallet_ext($address: string, $hash: string, $initial_bal: decimal) {
+    LET $wallet = (CREATE wallet CONTENT { address: $address, balance: $initial_bal OR 0f, hash: $hash });
+    RETURN $wallet; 
+} PERMISSIONS FULL;
+
 DEFINE FUNCTION OVERWRITE fn::transfer_balance($from: record<wallet>, $to: record<wallet> | record<name>, $amount: decimal) {
 UPDATE $from SET balance -= $amount;
 UPDATE $from SET total_out += $amount;

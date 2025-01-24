@@ -1,4 +1,19 @@
 use sha2::{Digest, Sha256};
+use rand::{distributions::Uniform, thread_rng, Rng};
+
+pub fn generate_random_password() -> String {
+    // Define the character set, including letters, digits, underscores, and hyphens
+    let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                           abcdefghijklmnopqrstuvwxyz\
+                           0123456789_-";
+    let mut rng = thread_rng();
+    let dist = Uniform::from(0..charset.len());
+
+    // Generate a random string of 32 characters
+    (0..32)
+        .map(|_| charset[rng.sample(&dist)] as char)
+        .collect()
+}
 
 pub fn sha256(input: &str) -> String {
     let mut hasher = Sha256::new();
