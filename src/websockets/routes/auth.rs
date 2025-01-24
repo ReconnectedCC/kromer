@@ -32,7 +32,8 @@ pub async fn perform_login(
         ..ws_metadata.to_owned()
     };
     let wallet: AddressJson = wallet.into();
-    return Ok((new_ws_data, wallet));
+
+    Ok((new_ws_data, wallet))
 }
 
 pub async fn perform_logout(ws_metadata: &WrappedWsData) -> WrappedWsData {

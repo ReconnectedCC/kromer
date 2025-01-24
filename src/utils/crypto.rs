@@ -10,9 +10,7 @@ pub fn generate_random_password() -> String {
     let dist = Uniform::from(0..charset.len());
 
     // Generate a random string of 32 characters
-    (0..32)
-        .map(|_| charset[rng.sample(&dist)] as char)
-        .collect()
+    (0..32).map(|_| charset[rng.sample(dist)] as char).collect()
 }
 
 pub fn sha256(input: &str) -> String {
@@ -28,7 +26,7 @@ pub fn double_sha256(input: &str) -> String {
 }
 
 pub fn hex_to_base36(input: u8) -> char {
-    let byte = 48 + (input / 7) as u8;
+    let byte = 48 + (input / 7);
 
     let adjusted_byte = if byte + 39 > 112 {
         101 // 'e'
@@ -46,8 +44,8 @@ pub fn make_v2_address(key: &str, address_prefix: &str) -> String {
     let mut chain = address_prefix.to_string();
     let mut hash = double_sha256(key);
 
-    for i in 0..8 {
-        chars[i] = hash[..2].to_string();
+    for item in chars.iter_mut().take(8) {
+        *item = hash[..2].to_string();
         hash = double_sha256(&hash);
     }
 

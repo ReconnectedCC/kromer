@@ -60,7 +60,7 @@ pub async fn make_transaction(
                     let creation_data = TransactionCreateData {
                         from: sender.address.clone(),
                         to: recipient.address.clone(),
-                        amount: amount,
+                        amount,
                         metadata: metadata.clone(),
                         transaction_type: TransactionType::Transfer,
                     };
@@ -80,7 +80,7 @@ pub async fn make_transaction(
                                     value: amount,
                                     time,
                                     name: None,
-                                    metadata: metadata,
+                                    metadata,
                                     sent_metaname: None,
                                     sent_name: None,
                                     transaction_type: "transfer".to_string(),

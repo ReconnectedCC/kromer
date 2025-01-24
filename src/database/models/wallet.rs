@@ -226,7 +226,7 @@ impl Model {
         let pkey = &wallet.hash;
         let authed = *pkey == Some(hash); // Cursed i know, it makes the borrow checker happy.
 
-        if authed == false {
+        if !authed {
             tracing::info!("Someone tried to login to an address they do not own");
         }
 

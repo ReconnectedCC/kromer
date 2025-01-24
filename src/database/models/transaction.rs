@@ -9,10 +9,7 @@ use surrealdb::{
 use rust_decimal::Decimal;
 
 use super::{serialize_table_opt, CountResponse};
-use crate::{
-    models::transactions::{AddressTransactionQuery, TransactionType},
-    routes::PaginationParams,
-};
+use crate::{models::transactions::TransactionType, routes::PaginationParams};
 
 static KST_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?:([a-z0-9-_]{1,32})@)?([a-z0-9]{1,64})\.kst").unwrap());

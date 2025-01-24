@@ -14,7 +14,7 @@ pub fn is_valid_name(name: String, fetching: bool) -> bool {
     let re = Regex::new(re).unwrap();
     let name = name.to_lowercase();
 
-    re.is_match(&name) && name.len() > 0 && name.len() <= 64
+    re.is_match(&name) && !name.is_empty() && name.len() <= 64
 }
 
 pub fn is_valid_kromer_address(address: String) -> bool {
@@ -31,7 +31,7 @@ pub fn is_valid_kromer_address_list(address_list: String) -> bool {
 
 pub fn is_valid_a_record(a: String) -> bool {
     let re = Regex::new(NAME_A_RECORD_RE).unwrap();
-    a.len() > 0 && a.len() <= 255 && re.is_match(&a)
+    !a.is_empty() && a.len() <= 255 && re.is_match(&a)
 }
 
 pub fn strip_name_suffix(name: String) -> String {

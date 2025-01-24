@@ -110,11 +110,9 @@ async fn name_register(
     let name = clean_name_input(name.into_inner());
     let new_name_cost = rust_decimal::Decimal::new(MINING_CONSTANTS.name_cost, 0);
 
-    let private_key = if let Some(json_details) = details.as_ref() {
-        Some(json_details.private_key.clone())
-    } else {
-        None
-    };
+    let private_key = details
+        .as_ref()
+        .map(|json_details| json_details.private_key.clone());
 
     // Manual error handling here
     if private_key.is_none() {

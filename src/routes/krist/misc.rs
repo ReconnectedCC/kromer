@@ -21,7 +21,7 @@ async fn login_address(
     let result = Wallet::verify_address(db, private_key).await?;
 
     Ok(HttpResponse::Ok().json(AddressAuthenticationResponse {
-        address: result.authed.then(|| result.address.address),
+        address: result.authed.then_some(result.address.address),
         authed: result.authed,
         ok: true,
     }))
@@ -84,7 +84,7 @@ async fn get_walletversion() -> HttpResponse {
 #[get("/supply")]
 async fn get_kromer_supply(state: web::Data<AppState>) -> Result<HttpResponse, KristError> {
     let db = &state.db;
-    let supply = Wallet::supply(&db).await?;
+    let supply = Wallet::supply(db).await?;
 
     let response = MoneySupplyResponse { ok: true, supply };
 
