@@ -218,6 +218,7 @@ async fn process_text_msg(
     };
 
     let msg_type = parsed_msg.message_type;
+    tracing::debug!("Message type was: {:?}", msg_type);
     let msg_id = parsed_msg.id;
 
     let mut ws_modification_data = WsSessionModification {
@@ -341,9 +342,12 @@ async fn process_text_msg(
             }
         }
 
+        // TODO: Gotta split up the WebSocketMessageType so the regular response types don't error out here when nothing provided, small fish though
         _ => {
-            // TODO: This is just an example, we should error here with a good error message.
+            // TODO: Maybe verify this against Krist messages?
             // We should tell the user there was a syntax error with the type in their message.
+
+            // TODO: Maybe make all of the fields on the incoming message types options so we can properly capture if they missed a field
             ws_modification_data = WsSessionModification {
                 msg_type: Some(OutgoingWebSocketMessage {
                     ok: Some(false),

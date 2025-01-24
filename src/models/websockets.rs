@@ -77,6 +77,9 @@ pub enum WebSocketMessageType {
         request_id: Option<String>
     },
     Work,
+
+    #[serde(other)]
+    Unknown
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -223,6 +226,7 @@ impl WebSocketMessageType {
             WebSocketMessageType::Error { .. } => "error",
             WebSocketMessageType::Response { .. } => "response",
             WebSocketMessageType::Keepalive { .. } => "keepalive",
+            WebSocketMessageType::Unknown => "unknown",
         }
     }
 }
