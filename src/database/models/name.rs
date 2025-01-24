@@ -1,7 +1,6 @@
+use chrono::Utc;
 use surrealdb::{
-    engine::any::Any,
-    sql::{Datetime, Id, Thing},
-    Surreal,
+    engine::any::Any, sql::{Datetime, Id, Thing}, Surreal
 };
 
 use super::{serialize_table_opt, CountResponse};
@@ -19,11 +18,15 @@ pub struct Model {
     pub name: String,
     #[serde(
         skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_table_opt"
+        //serialize_with = "serialize_table_opt"
     )]
-    pub original_owner: Option<Thing>,
-    pub owner: Thing,
+    pub original_owner: Option<String>,
+    pub owner: String,
     pub registered: Datetime,
+    pub updated: Option<Datetime>,
+    pub transfered: Option<Datetime>,
+    pub a: Option<String>,
+    pub unpaid: i64,
 }
 
 impl Model {
@@ -107,6 +110,26 @@ impl Model {
         Ok(models)
     }
 
+    pub async fn all_unpaid(
+        db: &Surreal<Any>,
+        pagination: &PaginationParams,
+    ) -> Result<Vec<Model>, surrealdb::Error> {
+        let limit = pagination.limit.unwrap_or(50);
+        let offset = pagination.offset.unwrap_or(0);
+        let limit = limit.clamp(1,1000);
+
+        let q = "SELECT * OMIT id from name WHERE unpaid > 0 LIMIT $limit START $offset";
+        
+        let mut response = db
+            .query(q)
+            .bind(("limit", limit))
+            .bind(("offset", offset))
+            .await?;
+        let models: Vec<Model> = response.take(0)?;
+
+        Ok(models)
+    }
+
     /// Get the total amount of transactions in the database
     pub async fn count(db: &Surreal<Any>) -> Result<usize, surrealdb::Error> {
         let q = "(SELECT count() FROM name GROUP BY count)[0] or { count: 0 }";
@@ -116,5 +139,40 @@ impl Model {
         let count = count.unwrap_or_default(); // Its fine, we make sure we always get a response with the `or` statement in the query.
 
         Ok(count.count)
+    }
+
+    pub async fn count_unpaid(db: &Surreal<Any>) -> Result<usize, surrealdb::Error> {
+        let q = "(SELECT count() FROM name WHERE unpaid > 0 GROUP BY count)[0] or { count: 0 }";
+
+        let mut response = db.query(q).await?;
+        let count: Option<CountResponse> = response.take(0)?;
+        let count = count.unwrap_or_default();
+
+        Ok(count.count)
+    }
+
+    pub async fn register_name(
+        db: &Surreal<Any>,
+        name: String,
+        owner: String,
+    ) -> Result<Option<Model>, surrealdb::Error> {
+
+        let response:Option<Model> = db
+            .create("name")
+            .content(Model {
+                id: None,
+                last_transfered: None,
+                name,
+                original_owner: Some(owner.clone()),
+                owner,
+                registered: surrealdb::sql::Datetime::from(Utc::now()),
+                updated: None,
+                transfered: None,
+                a: None,
+                unpaid: 0,
+            })
+            .await?;
+
+        Ok(response)
     }
 }

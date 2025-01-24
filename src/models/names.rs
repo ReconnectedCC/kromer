@@ -19,9 +19,24 @@ pub struct NameResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct NameCostResponse {
+    pub ok: bool,
+    pub name_cost: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct DetailedUnpaidResponseRow {
     pub count: i64,
     pub unpaid: i64,
+}
+
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct RegisterNameRequest {
+    //#[serde(rename = "desiredName")]
+    //pub desired_name: String,
+    #[serde(rename = "privatekey")]
+    pub private_key: String
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -39,8 +54,8 @@ impl From<name::Model> for NameJson {
     fn from(name: name::Model) -> Self {
         Self {
             name: name.name,
-            owner: Some(name.owner.to_raw()), // TODO: Use correct values
-            original_owner: None,             // TODO: Populate this.
+            owner: Some(name.owner), // TODO: Use correct values
+            original_owner: name.original_owner,             // TODO: Populate this.
             registered: Some(name.registered.to_rfc3339()),
             updated: None,
             transfered: None, // TODO: Populate this
