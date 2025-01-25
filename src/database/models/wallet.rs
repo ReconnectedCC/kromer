@@ -35,6 +35,13 @@ pub struct VerifyResponse {
     pub address: Model,
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct LookupResponse {
+    #[serde(flatten)]
+    pub model: Model,
+    pub names: usize,
+}
+
 impl Model {
     /// Get a wallet from its unique ID
     pub async fn get<S: AsRef<str>>(
@@ -282,6 +289,19 @@ impl Model {
             .bind(("offset", offset))
             .await?;
         let models: Vec<name::Model> = response.take(0)?;
+
+        Ok(models)
+    }
+
+    /// Lookup a series of wallets by address
+    pub async fn lookup(
+        db: &Surreal<Any>,
+        addresses: Vec<String>,
+    ) -> Result<Vec<LookupResponse>, surrealdb::Error> {
+        let q = "RETURN fn::get_wallets_with_name_count($addresses)";
+
+        let mut response = db.query(q).bind(("addresses", addresses)).await?;
+        let models: Vec<LookupResponse> = response.take(0)?;
 
         Ok(models)
     }

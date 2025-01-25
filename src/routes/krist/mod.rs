@@ -1,3 +1,4 @@
+mod lookup;
 mod misc;
 mod names;
 mod transactions;
@@ -12,4 +13,5 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.configure(ws::config);
     cfg.configure(names::config);
     cfg.configure(misc::config);
+    cfg.service(web::scope("/lookup").configure(lookup::config));
 }
