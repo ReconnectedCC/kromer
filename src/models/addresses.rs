@@ -33,7 +33,7 @@ pub struct AddressJson {
     #[serde(rename = "firstseen")]
     pub first_seen: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub names: Option<i64>,
+    pub names: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
