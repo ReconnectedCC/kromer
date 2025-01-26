@@ -4,18 +4,22 @@ use actix_web::{get, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
 use crate::models::addresses::AddressJson;
-use crate::models::webserver::lookup::addresses::AddressLookupResponse;
+use crate::models::webserver::lookup::addresses::{LookupResponse, QueryParameters};
 use crate::{errors::krist::KristError, AppState};
 
 #[get("/{addresses}")]
 async fn addresses_lookup(
     state: web::Data<AppState>,
     addresses: web::Path<String>,
+    _params: web::Query<QueryParameters>,
 ) -> Result<HttpResponse, KristError> {
     let db = &state.db;
     let addresses = addresses.into_inner();
     let addresses: Vec<String> = addresses.split(',').map(|s| s.to_owned()).collect();
     let addresses_len = addresses.len();
+
+    // TODO: Handle `fetchNames` query param.
+    //       Do we be naive and just always get it when calling SurrealDB and hide it when it's not needed?
 
     let resp = Wallet::lookup(db, addresses).await?;
     let len = resp.len();
@@ -36,7 +40,7 @@ async fn addresses_lookup(
         .map(|model| (model.address.clone(), model))
         .collect();
 
-    let response = AddressLookupResponse {
+    let response = LookupResponse {
         ok: true,
         found: len,
         not_found: addresses_len - len,
