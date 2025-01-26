@@ -1,4 +1,6 @@
 pub mod addresses;
+pub mod names;
+pub mod transactions;
 
 use serde::{Deserialize, Serialize};
 
