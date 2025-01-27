@@ -7,7 +7,7 @@ const NAME_RE: &str = r"^[a-z0-9_-]{1,64}$";
 const NAME_A_RECORD_RE: &str = r"^[^\s.?#].[^\s]*$";
 const _NAME_META_RE: &str = r"^(?:([a-z0-9-_]{1,32})@)?([a-z0-9]{1,64})\.kst$";
 
-pub fn is_valid_name(name: String, fetching: bool) -> bool {
+pub fn is_valid_name(name: &str, fetching: bool) -> bool {
     let re = if fetching { NAME_FETCH_RE } else { NAME_RE };
 
     // Gonna just unwrap and assume it's okay, just don't break Regex strings pls
@@ -17,23 +17,23 @@ pub fn is_valid_name(name: String, fetching: bool) -> bool {
     re.is_match(&name) && !name.is_empty() && name.len() <= 64
 }
 
-pub fn is_valid_kromer_address(address: String) -> bool {
+pub fn is_valid_kromer_address(address: &str) -> bool {
     let re = Regex::new(ADDRESS_RE_V2).unwrap();
 
-    re.is_match(&address)
+    re.is_match(address)
 }
 
-pub fn is_valid_kromer_address_list(address_list: String) -> bool {
+pub fn is_valid_kromer_address_list(address_list: &str) -> bool {
     let re = Regex::new(ADDRESS_LIST_RE).unwrap();
 
-    re.is_match(&address_list)
+    re.is_match(address_list)
 }
 
-pub fn is_valid_a_record(a: String) -> bool {
+pub fn is_valid_a_record(a: &str) -> bool {
     let re = Regex::new(NAME_A_RECORD_RE).unwrap();
-    !a.is_empty() && a.len() <= 255 && re.is_match(&a)
+    !a.is_empty() && a.len() <= 255 && re.is_match(a)
 }
 
-pub fn strip_name_suffix(name: String) -> String {
+pub fn strip_name_suffix(name: &str) -> String {
     name.replace(r"\.kst$", "")
 }

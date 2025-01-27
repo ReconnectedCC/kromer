@@ -51,7 +51,7 @@ async fn name_check(
     let name = name.into_inner();
     let db = &state.db;
 
-    if !is_valid_name(name.clone(), true) {
+    if !is_valid_name(&name, true) {
         return Err(KristError::Generic(GenericError::InvalidParameter(
             "name".to_string(),
         )));
@@ -123,7 +123,7 @@ async fn name_register(
     // if desired_name.is_none() {
     //     return Err(KristError::Generic(GenericError::MissingParameter("desiredName".to_string())))
     // }
-    if !is_valid_name(name.clone(), false) {
+    if !is_valid_name(&name, false) {
         return Err(KristError::Generic(GenericError::InvalidParameter(
             "name".to_string(),
         )));
