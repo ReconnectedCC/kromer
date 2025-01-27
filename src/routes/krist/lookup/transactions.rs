@@ -4,11 +4,11 @@ use crate::{errors::krist::KristError, AppState};
 
 #[get("/{transactions}")]
 async fn transactions_lookup(
-    state: web::Data<AppState>,
+    _state: web::Data<AppState>,
     transactions: web::Path<String>,
 ) -> Result<HttpResponse, KristError> {
     let transactions = transactions.into_inner();
-    let transactions: Vec<String> = transactions.split(',').map(|s| s.to_owned()).collect();
+    let _transactions: Vec<String> = transactions.split(',').map(|s| s.to_owned()).collect();
 
     todo!()
 }
