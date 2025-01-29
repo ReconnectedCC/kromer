@@ -132,7 +132,7 @@ impl Model {
         Ok(models)
     }
 
-    /// Get the total amount of transactions in the database
+    /// Get the total amount of names in the database
     pub async fn count(db: &Surreal<Any>) -> Result<usize, surrealdb::Error> {
         let q = "(SELECT count() FROM name GROUP BY count)[0] or { count: 0 }";
 
@@ -153,6 +153,7 @@ impl Model {
         Ok(count.count)
     }
 
+    /// Create a new name with a given owner
     pub async fn register_name(
         db: &Surreal<Any>,
         name: String,
@@ -174,6 +175,26 @@ impl Model {
             })
             .await?;
 
+        // TODO: Add graph relation to this, used for address lookups in Krist
+
         Ok(response)
+    }
+
+    /// Modify the data for a given name
+    pub async fn modify_data(
+        db: &Surreal<Any>,
+        name: String,
+        data: Option<String>,
+    ) -> Result<bool, surrealdb::Error> {
+        let q = "UPDATE name SET a = $data WHERE name = $name;";
+
+        let mut response = db
+            .query(q)
+            .bind(("data", data))
+            .bind(("name", name))
+            .await?;
+        let result: Option<Model> = response.take(0)?; // I hope this is fine lol
+
+        Ok(result.is_some())
     }
 }
