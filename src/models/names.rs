@@ -39,6 +39,15 @@ pub struct RegisterNameRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct NameDataUpdateBody {
+    /// The data you want to set for the name.
+    /// You may pass an empty string (`""`), `null` (in JSON requests), or omit the a parameter entirely to remove the data.
+    pub a: Option<String>,
+    #[serde(rename = "privatekey")]
+    pub private_key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct NameJson {
     pub name: String,
     pub owner: Option<String>,

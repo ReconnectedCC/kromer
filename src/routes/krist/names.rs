@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, put, web, HttpResponse};
 use serde_json::json;
 
 use crate::database::models::name::Model as Name;
@@ -10,7 +10,8 @@ use crate::errors::krist::transaction::TransactionError;
 use crate::errors::krist::{name::NameError, KristError};
 use crate::models::motd::MINING_CONSTANTS;
 use crate::models::names::{
-    NameCostResponse, NameJson, NameListResponse, NameResponse, RegisterNameRequest,
+    NameCostResponse, NameDataUpdateBody, NameJson, NameListResponse, NameResponse,
+    RegisterNameRequest,
 };
 use crate::models::transactions::TransactionType;
 use crate::utils::validation_kromer::is_valid_name;
@@ -197,23 +198,17 @@ async fn name_get(
     // ))
 }
 
-// #[get("/{id}")]
-// async fn name_get(
-//     state: web::Data<AppState>,
-//     id: web::Path<String>,
-// ) -> Result<HttpResponse, KristError> {
-//     let id = id.into_inner();
-//     let db = &state.db;
+async fn name_update_data(
+    state: web::Data<AppState>,
+    name: web::Path<String>,
+    body: web::Json<NameDataUpdateBody>,
+) -> Result<HttpResponse, KristError> {
+    let name = name.into_inner();
+    let body = body.into_inner();
+    let db = &state.db;
 
-//     let slim = Name::get_partial(db, &id).await?;
-
-//     slim.map(|name| NameResponse {
-//         ok: true,
-//         name: name.into(),
-//     })
-//     .map(|response| HttpResponse::Ok().json(response))
-//     .ok_or_else(|| KristError::Name(NameError::NameNotFound(id)))
-// }
+    todo!()
+}
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -224,6 +219,11 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(name_bonus)
             .service(name_new)
             .service(name_get)
-            .service(name_register),
+            .service(name_register)
+            .service(
+                web::resource("/{name}/update")
+                    .put(name_update_data)
+                    .post(name_update_data),
+            ),
     );
 }
