@@ -18,7 +18,7 @@ pub fn get_subscription_level(
     WsSessionModification {
         msg_type: Some(OutgoingWebSocketMessage {
             ok: Some(true),
-            id: msg_id.clone(),
+            id: msg_id,
             message: WebSocketMessageType::Response {
                 message: ResponseMessageType::GetSubscriptionLevel {
                     subscription_level: subscription_levels.to_owned().to_string(),
@@ -35,7 +35,7 @@ pub fn get_valid_subscription_levels(msg_id: String) -> WsSessionModification {
     WsSessionModification {
         msg_type: Some(OutgoingWebSocketMessage {
             ok: Some(true),
-            id: msg_id.clone(),
+            id: msg_id,
             message: WebSocketMessageType::Response {
                 message: ResponseMessageType::GetValidSubscriptionLevels {
                     valid_subscription_levels: valid_subscription_levels.to_string(),
@@ -65,7 +65,7 @@ pub fn subscribe(
     WsSessionModification {
         msg_type: Some(OutgoingWebSocketMessage {
             ok: Some(true),
-            id: msg_id.clone(),
+            id: msg_id,
             message: WebSocketMessageType::Response {
                 message: ResponseMessageType::Subscribe {
                     subscription_level: new_ws_data.subs.to_string(),
@@ -96,7 +96,7 @@ pub fn unsubscribe(
     WsSessionModification {
         msg_type: Some(OutgoingWebSocketMessage {
             ok: Some(true),
-            id: msg_id.clone(),
+            id: msg_id,
             message: WebSocketMessageType::Response {
                 message: ResponseMessageType::Unsubcribe {
                     subscription_level: new_ws_data.subs.to_string(),
