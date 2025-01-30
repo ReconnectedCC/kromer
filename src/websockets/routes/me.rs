@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use surrealdb::{engine::any::Any, Surreal};
 
 use crate::{
@@ -14,7 +12,7 @@ use crate::{
 
 pub async fn get_me(
     msg_id: String,
-    db: &Arc<Surreal<Any>>,
+    db: &Surreal<Any>,
     ws_metadata: &WrappedWsData,
 ) -> Result<OutgoingWebSocketMessage, KromerError> {
     if ws_metadata.is_guest() {

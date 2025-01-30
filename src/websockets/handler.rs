@@ -20,7 +20,6 @@ use crate::{
 };
 use std::{
     pin::pin,
-    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -199,7 +198,7 @@ pub async fn handle_ws(
 }
 
 async fn process_text_msg(
-    db: &Arc<Surreal<Any>>,
+    db: &Surreal<Any>,
     ws_metadata: &WrappedWsData,
     _ws_server: &WsServerHandle,
     session: &mut actix_ws::Session,
@@ -243,7 +242,7 @@ async fn process_text_msg(
         WebSocketMessageType::Login {
             login_details: Some(login_details),
         } => {
-            let auth_result = perform_login(ws_metadata, login_details, db.to_owned()).await;
+            let auth_result = perform_login(ws_metadata, login_details, db).await;
 
             // Generate the response if it's okay
             if auth_result.is_ok() {

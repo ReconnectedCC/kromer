@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use surrealdb::{engine::any::Any, Surreal};
@@ -21,7 +19,7 @@ use crate::database::models::transaction::Model as Transaction;
 use crate::database::models::wallet::Model as Wallet;
 
 pub async fn make_transaction(
-    db: &Arc<Surreal<Any>>,
+    db: &Surreal<Any>,
     msg_id: String,
     private_key: Option<String>,
     to: Option<String>,

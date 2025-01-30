@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
 
@@ -12,7 +10,7 @@ use crate::{models::auth::LoginDetails, websockets::wrapped_ws::WrappedWsData};
 pub async fn perform_login(
     ws_metadata: &WrappedWsData,
     login_details: LoginDetails,
-    db: Arc<Surreal<Any>>,
+    db: &Surreal<Any>,
 ) -> Result<(WrappedWsData, AddressJson), KromerError> {
     // We don't necessarily care if they are logged in to a wallet already, or if they are a guest,
     // so we just want to verify that the WsMessageType has the LoginDetails struct on it,

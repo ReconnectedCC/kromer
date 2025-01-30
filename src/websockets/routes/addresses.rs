@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use surrealdb::{engine::any::Any, Surreal};
 
 use crate::models::{
@@ -16,7 +14,7 @@ pub async fn get_address(
     address: Option<String>,
     _fetch_names: Option<bool>,
     msg_id: String,
-    db: &Arc<Surreal<Any>>,
+    db: &Surreal<Any>,
 ) -> WsSessionModification {
     let outgoing_message: OutgoingWebSocketMessage;
     if address.is_none() {
