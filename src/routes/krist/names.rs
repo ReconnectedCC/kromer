@@ -18,10 +18,6 @@ use crate::utils;
 use crate::utils::validation_kromer::is_valid_name;
 use crate::{routes::PaginationParams, AppState};
 
-fn clean_name_input(name: String) -> String {
-    name.trim().to_lowercase()
-}
-
 #[get("")]
 async fn name_list(
     state: web::Data<AppState>,
@@ -58,7 +54,7 @@ async fn name_check(
             "name".to_string(),
         )));
     }
-    let name = clean_name_input(name);
+    let name = name.trim().to_lowercase();
 
     let db_name = Name::get_by_name(db, name).await?;
 
@@ -109,7 +105,7 @@ async fn name_register(
     details: web::Json<Option<RegisterNameRequest>>,
 ) -> Result<HttpResponse, KristError> {
     let db = &state.db;
-    let name = clean_name_input(name.into_inner());
+    let name = name.into_inner().trim().to_lowercase();
     let new_name_cost = rust_decimal::Decimal::new(MINING_CONSTANTS.name_cost, 0);
 
     let private_key = details
@@ -229,7 +225,8 @@ async fn name_update_data(
         )));
     }
 
-    let a_record = clean_name_input(a_record);
+    let name = name.trim().to_lowercase();
+
     let wallet = Wallet::verify_address(db, body.private_key).await?;
     if !wallet.authed {
         tracing::info!("Auth failed on name update");
