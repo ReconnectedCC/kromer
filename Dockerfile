@@ -16,6 +16,7 @@ COPY . .
 RUN cargo build --release
 
 FROM debian:bookworm-slim AS runtime
-WORKDIR /capy
+WORKDIR /kromer
+COPY surrealdb-migrations .
 COPY --from=builder /usr/src/kromer/target/release/kromer /usr/local/bin
 CMD ["kromer"]
