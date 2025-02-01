@@ -14,7 +14,6 @@ use crate::models::names::{
     RegisterNameRequest,
 };
 use crate::models::transactions::TransactionType;
-use crate::utils;
 use crate::utils::validation_kromer::is_valid_name;
 use crate::{routes::PaginationParams, AppState};
 
@@ -186,13 +185,6 @@ async fn name_get(
         })
         .map(|response| HttpResponse::Ok().json(response))
         .ok_or_else(|| KristError::Name(NameError::NameNotFound(name)))
-
-    // Ok(HttpResponse::Ok().json(
-    //     json!({
-    //         "ok": true,
-    //         "name": name
-    //     })
-    // ))
 }
 
 async fn name_update_data(
@@ -204,36 +196,10 @@ async fn name_update_data(
     let name = name.into_inner();
     let body = body.into_inner();
 
-    // I have this code so much, i hate you, krist.
-    let a_record = body.a;
-    if a_record.is_none() {
-        return Err(KristError::Generic(GenericError::MissingParameter(
-            "a".to_owned(),
-        )));
-    }
-    let a_record = a_record.unwrap();
+    let model = Name::ctrl_modify_data(db, name, body).await?;
+    let resp: NameJson = model.into();
 
-    if !utils::validation_kromer::is_valid_name(&name, false) {
-        return Err(KristError::Generic(GenericError::InvalidParameter(
-            "name".to_owned(),
-        )));
-    }
-
-    if !utils::validation_kromer::is_valid_a_record(&a_record) {
-        return Err(KristError::Generic(GenericError::InvalidParameter(
-            "a".to_owned(),
-        )));
-    }
-
-    let name = name.trim().to_lowercase();
-
-    let wallet = Wallet::verify_address(db, body.private_key).await?;
-    if !wallet.authed {
-        tracing::info!("Auth failed on name update");
-        return Err(KristError::Address(AddressError::AuthFailed));
-    }
-
-    todo!()
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {

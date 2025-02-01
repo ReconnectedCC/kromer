@@ -6,7 +6,13 @@ use surrealdb::{
 };
 
 use super::{serialize_table_opt, CountResponse};
-use crate::routes::PaginationParams;
+use crate::{
+    database::models::wallet::Model as Wallet,
+    errors::krist::{address::AddressError, generic::GenericError, name::NameError, KristError},
+    models::names::NameDataUpdateBody,
+    routes::PaginationParams,
+    utils,
+};
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Model {
@@ -196,5 +202,61 @@ impl Model {
         let result: Option<Model> = response.take(0)?; // I hope this is fine lol
 
         Ok(result.is_some())
+    }
+
+    /// Modify the data for a given name with more checks
+    pub async fn ctrl_modify_data(
+        db: &Surreal<Any>,
+        name: String,
+        body: NameDataUpdateBody,
+    ) -> Result<Model, KristError> {
+        // I have this code so much, i hate you, krist.
+        let a_record = body.a;
+        if a_record.is_none() {
+            return Err(KristError::Generic(GenericError::MissingParameter(
+                "a".to_owned(),
+            )));
+        }
+        let a_record = a_record.unwrap();
+
+        if !utils::validation_kromer::is_valid_name(&name, false) {
+            return Err(KristError::Generic(GenericError::InvalidParameter(
+                "name".to_owned(),
+            )));
+        }
+
+        if !utils::validation_kromer::is_valid_a_record(&a_record) {
+            return Err(KristError::Generic(GenericError::InvalidParameter(
+                "a".to_owned(),
+            )));
+        }
+
+        let name = name.trim().to_lowercase();
+
+        let wallet = Wallet::verify_address(db, body.private_key).await?;
+        if !wallet.authed {
+            tracing::info!("Auth failed on name update");
+            return Err(KristError::Address(AddressError::AuthFailed));
+        }
+
+        // I dont like this, please stop borrow checker :sob:
+        let model = Model::get_by_name(db, name.clone())
+            .await?
+            .ok_or_else(|| KristError::Name(NameError::NameNotFound(name.clone())))?;
+
+        if model.owner != wallet.address.address {
+            return Err(KristError::Name(NameError::NotNameOwner(name)));
+        }
+
+        // Don't do anything if the data is the same
+        // I WANT TO STOP CLONING AAAAAAAA
+        if model.a == Some(a_record.clone()) {
+            return Ok(model);
+        }
+
+        // NOTE: We don't create a transaction for name updates, should we?
+        let _result = Model::modify_data(db, name, Some(a_record)).await?; // dont ask, idk either
+
+        Ok(model)
     }
 }
