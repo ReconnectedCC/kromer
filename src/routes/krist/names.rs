@@ -197,7 +197,8 @@ async fn name_update_data(
     let body = body.into_inner();
 
     let model = Name::ctrl_modify_data(db, name, body).await?;
-    let resp: NameJson = model.into();
+    let name: NameJson = model.into();
+    let resp = NameResponse { ok: true, name };
 
     Ok(HttpResponse::Ok().json(resp))
 }
