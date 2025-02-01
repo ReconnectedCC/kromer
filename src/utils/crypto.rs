@@ -1,4 +1,4 @@
-use rand::{distributions::Uniform, thread_rng, Rng};
+use rand::{distr::Uniform, Rng};
 use sha2::{Digest, Sha256};
 
 pub fn generate_random_password() -> String {
@@ -6,8 +6,8 @@ pub fn generate_random_password() -> String {
     let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                            abcdefghijklmnopqrstuvwxyz\
                            0123456789_-";
-    let mut rng = thread_rng();
-    let dist = Uniform::from(0..charset.len());
+    let mut rng = rand::rng();
+    let dist = Uniform::try_from(0..charset.len()).expect("failed to sample values between bounds");
 
     // Generate a random string of 32 characters
     (0..32).map(|_| charset[rng.sample(dist)] as char).collect()
