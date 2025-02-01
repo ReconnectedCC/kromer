@@ -13,57 +13,64 @@ pub fn generate_random_password() -> String {
     (0..32).map(|_| charset[rng.sample(dist)] as char).collect()
 }
 
-pub fn sha256(input: &str) -> String {
+pub fn sha256(data: &str) -> String {
     let mut hasher = Sha256::new();
-
-    hasher.update(input.as_bytes());
-
-    format!("{:x}", hasher.finalize())
+    hasher.update(data.as_bytes());
+    hex::encode(hasher.finalize())
 }
 
-pub fn double_sha256(input: &str) -> String {
-    sha256(&sha256(input))
+pub fn double_sha256(data: &str) -> String {
+    let first_hash = sha256(data);
+    sha256(&first_hash)
 }
 
-pub fn hex_to_base36(input: u8) -> char {
-    let byte = 48 + (input / 7);
-
-    let adjusted_byte = if byte + 39 > 112 {
-        101 // 'e'
-    } else if byte > 57 {
-        byte + 39
-    } else {
-        byte
+fn hex_to_base36(byte: u8) -> char {
+    let res_byte = match byte / 7 {
+        byte @ 0..=9 => byte + b'0',
+        byte @ 10..=35 => byte + b'a' - 10,
+        36 => b'e',
+        _ => unreachable!(),
     };
-
-    char::from(adjusted_byte)
+    res_byte as char
 }
 
 pub fn make_v2_address(key: &str, address_prefix: &str) -> String {
-    let mut chars = vec![String::new(); 9];
-    let mut chain = address_prefix.to_string();
+    let mut protein = [0u8; 9];
+    let mut used = [false; 9];
+    let mut chain = String::from(address_prefix);
     let mut hash = double_sha256(key);
 
-    for item in chars.iter_mut().take(8) {
-        *item = hash[..2].to_string();
+    for i in 0..9 {
+        protein[i] = u8::from_str_radix(&hash[0..2], 16).unwrap();
         hash = double_sha256(&hash);
     }
 
     let mut i = 0;
-    while i < 8 {
-        let index = usize::from_str_radix(&hash[(2 * i)..(2 + 2 * i)], 16);
-        if index.is_ok() {
-            let index = index.unwrap() % 9;
-            if chars[index].is_empty() {
-                hash = sha256(&hash);
-            } else {
-                let char_value = u8::from_str_radix(&chars[index], 16).unwrap();
-                chain.push(hex_to_base36(char_value));
-                chars[index].clear();
-                i += 1;
-            }
+    while i < 9 {
+        let start = 2 * i;
+        let end = start + 2;
+        let hex_part = &hash[start..end];
+        let num = u8::from_str_radix(hex_part, 16).unwrap();
+        let index = (num % 9) as usize;
+
+        if used[index] {
+            hash = sha256(&hash);
+        } else {
+            chain.push(hex_to_base36(protein[index]));
+            used[index] = true;
+            i += 1;
         }
     }
 
     chain
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_known_values() {
+        assert_eq!(make_v2_address("test123", "k"), "krcgbmalxg");
+    }
 }
