@@ -38,17 +38,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-broker"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e089b5c4d0cf02d72a9eca0b6c80aebff1ccd3d1e99c83d1f7b9baeff39dc5e9"
-dependencies = [
- "actix",
- "ahash 0.7.8",
- "log",
-]
-
-[[package]]
 name = "actix-codec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2404,7 +2393,6 @@ name = "kromer"
 version = "0.2.0"
 dependencies = [
  "actix",
- "actix-broker",
  "actix-web",
  "actix-ws",
  "chrono",
