@@ -1,6 +1,6 @@
 [package]
 name = "kromer"
-version = "0.2.0"
+version = "0.2.1"
 author = "ReconnectedCC Team (@bananasov, @uerkw, @ElonGates, @EmmaKnijn, @dimaguy)"
 license = "GPL-3.0"
 repository = "https://github.com/ReconnectedCC/kromer/"
