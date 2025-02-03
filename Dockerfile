@@ -15,8 +15,18 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
+# Astro build stage
+FROM node:20-slim AS astro-base
+RUN npm install -g pnpm 
+WORKDIR /usr/src/astro
+COPY docs/pnpm-lock.yaml docs/package.json ./
+RUN pnpm install --frozen-lockfile
+COPY docs .
+RUN pnpm run build
+
 FROM debian:bookworm-slim AS runtime
 WORKDIR /kromer
 COPY surrealdb-migrations .
 COPY --from=builder /usr/src/kromer/target/release/kromer /usr/local/bin
+COPY --from=astro-base /usr/src/astro/dist /kromer/docs/dist
 CMD ["kromer"]

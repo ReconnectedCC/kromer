@@ -2,6 +2,7 @@ use actix_web::web;
 
 use crate::guards;
 
+pub mod docs;
 pub mod index;
 pub mod internal;
 pub mod krist;
@@ -31,5 +32,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .guard(guards::internal_key_guard)
             .configure(internal::config),
     );
+    cfg.service(web::scope("/docs").configure(docs::config));
     cfg.service(web::scope("").service(index::index_get));
 }
