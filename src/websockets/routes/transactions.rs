@@ -12,7 +12,6 @@ use crate::{
             WsSessionModification,
         },
     },
-    websockets::utils::datetime::convert_to_iso_string,
 };
 
 use crate::database::models::transaction::Model as Transaction;
@@ -67,7 +66,7 @@ pub async fn make_transaction(
                     if response.is_ok() {
                         let _response: Vec<Transaction> = response.unwrap();
 
-                        let time = convert_to_iso_string(chrono::offset::Utc::now());
+                        let time = chrono::Utc::now().to_rfc3339();
                         outgoing_message = OutgoingWebSocketMessage {
                             ok: Some(true),
                             id: msg_id,

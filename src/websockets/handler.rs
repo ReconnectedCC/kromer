@@ -23,10 +23,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use super::{
-    routes::auth::perform_login, utils::datetime::convert_to_iso_string, wrapped_ws::WrappedWsData,
-    ws_server::WsServerHandle,
-};
+use super::{routes::auth::perform_login, wrapped_ws::WrappedWsData, ws_server::WsServerHandle};
 
 use crate::websockets::routes::me::get_me as route_get_me;
 
@@ -391,7 +388,7 @@ async fn spawn_keepalive(ws_server: WsServerHandle, conn: Uuid) -> (JoinHandle<(
 
         loop {
             interval.tick().await;
-            let cur_time = convert_to_iso_string(chrono::offset::Utc::now());
+            let cur_time = chrono::Utc::now().to_rfc3339();
             let keepalive_time = WebSocketMessageType::Keepalive {
                 server_time: cur_time.clone(),
             };

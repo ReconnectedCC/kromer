@@ -7,18 +7,6 @@ use crate::websockets::wrapped_ws::WrappedWsData;
 use super::deserialize_number_into_string;
 use super::{addresses::AddressJson, auth::LoginDetails};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum WebSocketSubscription {
-    Blocks,
-    OwnBlocks,
-    Transactions,
-    OwnTransactions,
-    Names,
-    OwnNames,
-    Motd,
-}
-
 pub struct WsSessionModification {
     pub msg_type: Option<OutgoingWebSocketMessage>,
     pub wrapped_ws_data: Option<WrappedWsData>,
