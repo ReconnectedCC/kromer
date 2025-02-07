@@ -3,6 +3,13 @@ use std::fs;
 use toml;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct DetailedMotdResponse {
+    pub ok: bool,
+    #[serde(flatten)]
+    pub motd: DetailedMotd, 
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Motd {
     pub motd: String,
     pub motd_set: String,

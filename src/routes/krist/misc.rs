@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
 use crate::models::misc::{MoneySupplyResponse, PrivateKeyAddressResponse, WalletVersionResponse};
-use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo};
+use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, DetailedMotdResponse, PackageInfo};
 use crate::{
     errors::krist::KristError,
     models::auth::{AddressAuthenticationResponse, LoginDetails},
@@ -36,8 +36,8 @@ async fn get_motd() -> HttpResponse {
         motd: "Message of the day".to_string(),
         set: None,
         motd_set: None,
-        public_url: "https://kromer.uwu".to_string(),
-        public_ws_url: "https://kromer.uwu/krist/ws".to_string(),
+        public_url: "http://kromer.reconnected.cc".to_string(),
+        public_ws_url: "http://kromer.reconnected.cc/api/krist/ws".to_string(),
         mining_enabled: false,
         transactions_enabled: true,
         debug_mode: true,
@@ -63,9 +63,14 @@ async fn get_motd() -> HttpResponse {
             address_prefix: "k".to_string(),
             name_suffix: "kro".to_string(),
             currency_name: "Kromer".to_string(),
-            currency_symbol: "Ϗ".to_string(),
+            currency_symbol: "KRO".to_string(),
         },
         notice: "Some awesome notice will go here".to_string(),
+    };
+
+    let motd = DetailedMotdResponse {
+        ok: true,
+        motd: motd
     };
 
     HttpResponse::Ok().json(motd)
