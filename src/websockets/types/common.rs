@@ -5,13 +5,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 pub struct WebSocketTokenData {
     pub address: String,
-    pub privatekey: Option<String>,
+    pub private_key: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct WebSocketSubscriptionList {
     #[serde(flatten)]
     pub subscriptions: Vec<WebSocketSubscriptionType>,
+}
+
+impl WebSocketTokenData {
+    #[inline]
+    pub fn new(address: String, private_key: Option<String>) -> Self {
+        Self {
+            address,
+            private_key,
+        }
+    }
 }
 
 impl WebSocketSubscriptionList {
