@@ -54,11 +54,15 @@ async fn main() -> Result<(), KromerError> {
 
     let token_cache = Arc::new(Mutex::new(TokenCache::new()));
     let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
+    // let token_cache = Arc::new(Mutex::new(TokenCache::new()));
+    // let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
 
     let state = web::Data::new(AppState {
         db: db_arc,
         token_cache,
         ws_manager,
+        // token_cache,
+        // ws_manager,
     });
 
     let http_server = HttpServer::new(move || {
