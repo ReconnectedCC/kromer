@@ -5,6 +5,7 @@ use actix_web::{middleware, web, App, HttpServer};
 
 use kromer::websockets::token_cache::TokenCache;
 use kromer::websockets::ws_manager::WsDataManager;
+use kromer::websockets::WebSocketServer;
 use surrealdb::opt::auth::Root;
 use surrealdb_migrations::MigrationRunner;
 
@@ -52,15 +53,12 @@ async fn main() -> Result<(), KromerError> {
 
     let db_arc = Arc::new(db);
 
-    let token_cache = Arc::new(Mutex::new(TokenCache::new()));
-    let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
     // let token_cache = Arc::new(Mutex::new(TokenCache::new()));
     // let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
+    let krist_ws_server = WebSocketServer::new();
 
     let state = web::Data::new(AppState {
         db: db_arc,
-        token_cache,
-        ws_manager,
         // token_cache,
         // ws_manager,
     });
@@ -84,6 +82,7 @@ async fn main() -> Result<(), KromerError> {
                     .error_handler(|err, _req| KromerError::Validation(err.to_string()).into()),
             )
             .app_data(state.clone())
+            .app_data(krist_ws_server.clone())
             .wrap(middleware::Logger::default())
             .wrap(middleware::NormalizePath::trim())
             .configure(kromer::routes::config)

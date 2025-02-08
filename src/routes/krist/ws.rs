@@ -15,9 +15,9 @@ use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::{address::AddressError, websockets::WebSocketError, KristError};
 use crate::websockets::handler::handle_ws;
 use crate::websockets::types::common::WebSocketTokenData;
-use crate::websockets::utils;
 use crate::websockets::wrapped_ws::WrappedWsData;
 use crate::websockets::ws_server::WsServer;
+use crate::websockets::{utils, WebSocketServer};
 use crate::AppState;
 
 #[derive(serde::Deserialize)]
@@ -26,55 +26,33 @@ struct WsConnDetails {
 }
 
 #[post("/start")]
+#[tracing::instrument(name = "setup_ws_route", level = "debug", skip_all)]
 pub async fn setup_ws(
-    _req: HttpRequest,
-    state: Data<AppState>,
+    state: web::Data<AppState>,
+    server: web::Data<WebSocketServer>,
     details: Option<web::Json<WsConnDetails>>,
     _stream: web::Payload,
 ) -> Result<HttpResponse, KristError> {
-    let tracing_span = tracing::span!(tracing::Level::DEBUG, "setup_ws_route");
-    let _tracing_enter = tracing_span.enter();
-
     let db = &state.db;
-    let token_cache_mutex = state.token_cache.clone();
+    let private_key = details.map(|json_details| json_details.privatekey.clone());
 
-    let ws_privatekey = details.map(|json_details| json_details.privatekey.clone());
-    let mut address = "guest".to_string();
-    let ws_privatekey2 = ws_privatekey.clone();
+    let uuid = match private_key {
+        Some(private_key) => {
+            let wallet = Wallet::verify_address(db, &private_key)
+                .await
+                .map_err(|_| KristError::Address(AddressError::AuthFailed))?;
+            let model = wallet.address;
 
-    if let Some(check_key) = ws_privatekey {
-        // This should error back in the request if the wallet key is invalid.
-        let wallet = Wallet::verify(db, check_key)
-            .await
-            .map_err(KristError::Database)?
-            .ok_or_else(|| KristError::Address(AddressError::AuthFailed))?;
+            let token_data = WebSocketTokenData::new(model.address, Some(private_key));
 
-        address = wallet.address;
-    }
-
-    let uuid = Uuid::new_v4();
-    let token_params = WebSocketTokenData {
-        address,
-        privatekey: ws_privatekey2,
-    };
-
-    let mut token_cache = token_cache_mutex.lock().await;
-    token_cache.add_token(uuid, token_params);
-
-    // Spawn a green thread that will handle token cleanup.
-    let token_cache2 = token_cache_mutex.clone();
-    let uuid2 = uuid;
-    tokio::spawn(async move {
-        let tracing_span = tracing::span!(tracing::Level::DEBUG, "spawned_token_cleanup");
-        let _tracing_enter = tracing_span.enter();
-        sleep(std::time::Duration::from_secs(30)).await;
-        let mut token_cache = token_cache2.lock().await;
-
-        if token_cache.check_token(uuid) {
-            tracing::info!("Token expired (30 secs)");
-            token_cache.remove_token(uuid2);
+            server.obtain_token(token_data).await
         }
-    });
+        None => {
+            let token_data = WebSocketTokenData::new("guest".into(), None);
+
+            server.obtain_token(token_data).await
+        }
+    };
 
     // Make the URL and return it to the user.
     let url = match utils::make_url::make_url(uuid) {
