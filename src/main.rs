@@ -3,15 +3,12 @@ use std::sync::Arc;
 
 use actix_web::{middleware, web, App, HttpServer};
 
-use kromer::websockets::token_cache::TokenCache;
-use kromer::websockets::ws_manager::WsDataManager;
 use kromer::websockets::WebSocketServer;
 use surrealdb::opt::auth::Root;
 use surrealdb_migrations::MigrationRunner;
 
 use kromer::database::db::{ConnectionOptions, Database};
 use kromer::{errors::KromerError, routes, AppState};
-use tokio::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> Result<(), KromerError> {
@@ -53,15 +50,9 @@ async fn main() -> Result<(), KromerError> {
 
     let db_arc = Arc::new(db);
 
-    // let token_cache = Arc::new(Mutex::new(TokenCache::new()));
-    // let ws_manager = Arc::new(Mutex::new(WsDataManager::default()));
     let krist_ws_server = WebSocketServer::new();
 
-    let state = web::Data::new(AppState {
-        db: db_arc,
-        // token_cache,
-        // ws_manager,
-    });
+    let state = web::Data::new(AppState { db: db_arc });
 
     let http_server = HttpServer::new(move || {
         App::new()
