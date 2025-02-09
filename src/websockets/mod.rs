@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 
 use types::common::{WebSocketSessionData, WebSocketSubscriptionType, WebSocketTokenData};
 
-use crate::models::websockets::WebSocketEventMessage;
+// use crate::models::websockets::WebSocketEventMessage;
 
 pub const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 pub const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -106,13 +106,48 @@ impl WebSocketServer {
         Ok(token)
     }
 
-    /// Broadcast an event to all connected clients
-    pub async fn broadcast_event(&self, event: WebSocketEventMessage) {
-        let msg =
-            serde_json::to_string(&event).expect("Failed to turn event message into a string");
+    pub async fn subscribe_to_event(&self, uuid: &Uuid, event: WebSocketSubscriptionType) {
+        let inner = self.inner.lock().await;
 
-        self.broadcast(msg).await;
+        let entry = inner.sessions.get_mut(uuid);
+        if let Some(data) = entry {
+            tracing::info!("Session {uuid} subscribed to event {event}");
+            data.subscriptions.insert(event);
+        } else {
+            tracing::info!("Tried to subscribe to event {event} but found a non-existent session");
+        }
     }
+
+    pub async fn unsubscribe_from_event(&self, uuid: &Uuid, event: &WebSocketSubscriptionType) {
+        let inner = self.inner.lock().await;
+
+        let entry = inner.sessions.get_mut(uuid);
+        if let Some(data) = entry {
+            tracing::info!("Session {uuid} unsubscribed from event {event}");
+            data.subscriptions.remove(event);
+        }
+    }
+
+    pub async fn get_subscription_list(&self, uuid: &Uuid) -> Vec<WebSocketSubscriptionType> {
+        let inner = self.inner.lock().await;
+
+        let entry = inner.sessions.get(uuid);
+        if let Some(data) = entry {
+            let subscriptions: Vec<WebSocketSubscriptionType> =
+                data.subscriptions.iter().map(|x| x.clone()).collect(); // not my fav piece of code but it works
+            return subscriptions;
+        }
+
+        Vec::new()
+    }
+
+    /// Broadcast an event to all connected clients
+    // pub async fn broadcast_event(&self, event: WebSocketEventMessage) {
+    //     let msg =
+    //         serde_json::to_string(&event).expect("Failed to turn event message into a string");
+
+    //     self.broadcast(msg).await;
+    // }
 
     /// Broadcast a message to all connected clients
     pub async fn broadcast(&self, msg: impl Into<ByteString>) {
