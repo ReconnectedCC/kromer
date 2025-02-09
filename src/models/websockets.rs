@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::websockets::types::common::WebSocketSubscriptionType;
 use crate::websockets::wrapped_ws::WrappedWsData;
 
+use super::blocks::BlockJson;
 use super::deserialize_number_into_string;
+use super::names::NameJson;
+use super::transactions::TransactionJson;
 use super::{addresses::AddressJson, auth::LoginDetails};
 
 pub struct WsSessionModification {
@@ -122,16 +125,9 @@ pub enum ResponseMessageType {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase", tag = "event")]
 pub enum WebSocketEventType {
-    Block {
-        block: super::blocks::BlockJson,
-        new_work: i64,
-    },
-    Transaction {
-        transaction: super::transactions::TransactionJson,
-    },
-    Name {
-        name: super::names::NameJson,
-    },
+    Block { block: BlockJson, new_work: i64 },
+    Transaction { transaction: TransactionJson },
+    Name { name: NameJson },
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -164,6 +160,15 @@ pub struct WebSocketEventMessage {
     pub message_type: String,
     #[serde(flatten)]
     pub event: WebSocketEventType,
+}
+
+impl WebSocketEventMessage {
+    pub fn new_transaction(transaction: TransactionJson) -> WebSocketEventMessage {
+        WebSocketEventMessage {
+            message_type: "event".to_owned(),
+            event: WebSocketEventType::Transaction { transaction },
+        }
+    }
 }
 
 #[cfg(test)]

@@ -18,6 +18,8 @@ use tokio::sync::Mutex;
 
 use types::common::WebSocketTokenData;
 
+use crate::models::websockets::WebSocketEventMessage;
+
 pub const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 pub const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 pub const TOKEN_EXPIRATION: Duration = Duration::from_secs(30);
@@ -88,9 +90,17 @@ impl WebSocketServer {
         let (_uuid, token) = inner
             .pending_tokens
             .remove(uuid)
-            .ok_or_else(|| WebSocketServerError::TokenNotFound)?; // TODO: Use proper error messages instead of anyhow
+            .ok_or_else(|| WebSocketServerError::TokenNotFound)?;
 
         Ok(token)
+    }
+
+    /// Broadcast an event to all connected clients
+    pub async fn broadcast_event(&self, event: WebSocketEventMessage) {
+        let msg =
+            serde_json::to_string(&event).expect("Failed to turn event message into a string");
+
+        self.broadcast(msg).await;
     }
 
     /// Broadcast a message to all connected clients
