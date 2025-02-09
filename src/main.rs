@@ -73,7 +73,7 @@ async fn main() -> Result<(), KromerError> {
                     .error_handler(|err, _req| KromerError::Validation(err.to_string()).into()),
             )
             .app_data(state.clone())
-            .app_data(krist_ws_server.clone())
+            .app_data(web::Data::new(krist_ws_server.clone()))
             .wrap(middleware::Logger::default())
             .wrap(middleware::NormalizePath::trim())
             .configure(kromer::routes::config)
