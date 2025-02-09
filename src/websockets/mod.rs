@@ -48,11 +48,11 @@ impl WebSocketServer {
         }
     }
 
-    async fn insert_session(&self, uuid: Uuid, session: Session) {
+    pub async fn insert_session(&self, uuid: Uuid, session: Session) {
         self.inner.lock().await.sessions.insert(uuid, session);
     }
 
-    async fn cleanup_session(&self, uuid: &Uuid) {
+    pub async fn cleanup_session(&self, uuid: &Uuid) {
         tracing::info!("Cleaning up session {uuid}");
         self.inner.lock().await.sessions.remove(uuid);
     }
