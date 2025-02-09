@@ -9,11 +9,6 @@ use super::names::NameJson;
 use super::transactions::TransactionJson;
 use super::{addresses::AddressJson, auth::LoginDetails};
 
-pub struct WsSessionModification {
-    pub msg_type: Option<OutgoingWebSocketMessage>,
-    pub wrapped_ws_data: Option<WrappedWsData>,
-}
-
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum WebSocketMessageType {

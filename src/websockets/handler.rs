@@ -1,5 +1,10 @@
 use std::sync::Arc;
 
+use chrono::Utc;
+use surrealdb::{engine::any::Any, Surreal, Uuid};
+use tokio::sync::Mutex;
+
+use super::{types::convert_to_iso_string, WebSocketServer};
 use crate::{
     errors::{websocket::WebSocketError, KromerError},
     models::{
@@ -7,46 +12,30 @@ use crate::{
         motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo},
         websockets::{
             IncomingWebsocketMessage, OutgoingWebSocketMessage, ResponseMessageType,
-            WebSocketMessageType, WsSessionModification,
+            WebSocketMessageType,
         },
-    },
-    websockets::routes::{
-        addresses::get_address,
-        auth::perform_logout,
-        subscriptions::{
-            get_subscription_level, get_valid_subscription_levels, subscribe, unsubscribe,
-        },
-        transactions::make_transaction,
     },
 };
 
-use super::{routes::auth::perform_login, types::convert_to_iso_string};
-
-use crate::websockets::routes::me::get_me as route_get_me;
-
-use chrono::Utc;
-use surrealdb::{engine::any::Any, Surreal};
-use tokio::sync::Mutex;
-
 pub async fn process_text_msg(
     db: &Surreal<Any>,
-    ws_metadata: Arc<Mutex<WrappedWsData>>,
+    server: &WebSocketServer,
     session: &mut actix_ws::Session,
+    uuid: &Uuid,
     text: &str,
-) -> Result<Option<WrappedWsData>, KromerError> {
+) -> Result<(), KromerError> {
     // strip leading and trailing whitespace (spaces, newlines, etc.)
     let msg = text.trim();
 
     // TODO: potentially change how this serialization is handled, so that we can properly extract "Invalid Parameter" errors.
     let parsed_msg_result: Result<IncomingWebsocketMessage, serde_json::Error> =
         serde_json::from_str(msg);
-    let ws_metadata = ws_metadata.lock().await;
 
     let parsed_msg = match parsed_msg_result {
         Ok(value) => value,
         Err(err) => {
             tracing::error!("Serde error: {}", err);
-            tracing::info!("Could not parse JSON for UUID: {}", ws_metadata.token);
+            tracing::info!("Could not parse JSON for session {uuid}");
             return Err(KromerError::WebSocket(WebSocketError::JsonParseRead));
         }
     };
@@ -54,11 +43,6 @@ pub async fn process_text_msg(
     let msg_type = parsed_msg.message_type;
     tracing::debug!("Message type was: {:?}", msg_type);
     let msg_id = parsed_msg.id;
-
-    let mut ws_modification_data = WsSessionModification {
-        msg_type: None,
-        wrapped_ws_data: None,
-    };
 
     match msg_type {
         WebSocketMessageType::Address {
@@ -128,89 +112,10 @@ pub async fn process_text_msg(
             amount,
             metadata,
             request_id,
-        } => {
-            ws_modification_data =
-                make_transaction(db, msg_id, private_key, to, amount, metadata, request_id).await;
-        }
-
-        WebSocketMessageType::Subscribe { event } => {
-            ws_modification_data = subscribe(&ws_metadata, msg_id, event);
-        }
-
-        WebSocketMessageType::Unsubscribe { event } => {
-            ws_modification_data = unsubscribe(&ws_metadata, msg_id, event)
-        }
-
-        WebSocketMessageType::GetSubscriptionLevel => {
-            ws_modification_data = get_subscription_level(&ws_metadata, msg_id);
-        }
-
-        WebSocketMessageType::GetValidSubscriptionLevels => {
-            ws_modification_data = get_valid_subscription_levels(msg_id);
-        }
-
-        // Mining will be perma-disabled
-        WebSocketMessageType::SubmitBlock => {
-            ws_modification_data = WsSessionModification {
-                msg_type: Some(OutgoingWebSocketMessage {
-                    ok: Some(false),
-                    id: Some(msg_id),
-                    message: WebSocketMessageType::Error {
-                        error: ErrorResponse {
-                            error: "mining_disabled".to_string(),
-                            message: Some("Mining disabled".to_string()),
-                        },
-                    },
-                }),
-                wrapped_ws_data: None,
-            }
-        }
-
-        WebSocketMessageType::Me => {
-            let me_data = route_get_me(msg_id, db, &ws_metadata).await;
-            if me_data.is_ok() {
-                ws_modification_data = WsSessionModification {
-                    msg_type: Some(me_data.unwrap()),
-                    wrapped_ws_data: None,
-                }
-            }
-        }
-
-        // TODO: Gotta split up the WebSocketMessageType so the regular response types don't error out here when nothing provided, small fish though
-        _ => {
-            // TODO: Maybe verify this against Krist messages?
-            // We should tell the user there was a syntax error with the type in their message.
-
-            // TODO: Maybe make all of the fields on the incoming message types options so we can properly capture if they missed a field
-            ws_modification_data = WsSessionModification {
-                msg_type: Some(OutgoingWebSocketMessage {
-                    ok: Some(false),
-                    id: Some(msg_id),
-                    message: WebSocketMessageType::Error {
-                        error: ErrorResponse {
-                            error: "invalid_message_type".to_string(),
-                            message: Some("Invalid message type".to_string()),
-                        },
-                    },
-                }),
-                wrapped_ws_data: None,
-            }
-        }
-    };
-
-    // This should be a response message here
-    if let Some(message) = ws_modification_data.msg_type {
-        let _ = session
-            .text(serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string()))
-            .await;
+        } => todo!(),
+        WebSocketMessageType::Work => todo!(),
+        WebSocketMessageType::Unknown => todo!(),
     }
-
-    // This should be the updated WS auth data
-    if let Some(auth) = ws_modification_data.wrapped_ws_data {
-        return Ok(Some(auth));
-    }
-
-    Ok(None)
 }
 
 pub async fn send_hello_message(session: &mut actix_ws::Session) {
