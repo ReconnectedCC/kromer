@@ -1,6 +1,6 @@
+pub mod errors;
 pub mod handler;
 pub mod routes;
-pub mod token_cache;
 pub mod types;
 pub mod utils;
 pub mod wrapped_ws;
@@ -12,11 +12,14 @@ use actix_web::rt::time;
 use actix_ws::Session;
 use bytestring::ByteString;
 use dashmap::DashMap;
+use errors::WebSocketServerError;
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use surrealdb::Uuid;
 use tokio::sync::Mutex;
 
 use types::common::WebSocketTokenData;
+
+use crate::errors::websocket::WebSocketError;
 
 pub const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 pub const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -77,19 +80,21 @@ impl WebSocketServer {
         uuid
     }
 
-    // TODO: Implement errors for token creation within WebSocketServer
-    // pub async fn use_token(&self, uuid: &Uuid) -> Result<WebSocketTokenData, anyhow::Error> {
-    //     // let inner = self.inner.lock().await;
+    pub async fn use_token(
+        &self,
+        uuid: &Uuid,
+    ) -> Result<WebSocketTokenData, errors::WebSocketServerError> {
+        let inner = self.inner.lock().await;
 
-    //     // tracing::debug!("Using token {uuid}");
+        tracing::debug!("Using token {uuid}");
 
-    //     // let (_uuid, token) = inner
-    //     //     .pending_tokens
-    //     //     .remove(uuid)
-    //     //     .ok_or_else(|| anyhow!("Expected token to exist"))?; // TODO: Use proper error messages instead of anyhow
-    //
-    //     // Ok(token)
-    // }
+        let (_uuid, token) = inner
+            .pending_tokens
+            .remove(uuid)
+            .ok_or_else(|| WebSocketServerError::TokenNotFound)?; // TODO: Use proper error messages instead of anyhow
+
+        Ok(token)
+    }
 
     /// Broadcast a message to all connected clients
     pub async fn broadcast(&self, msg: impl Into<ByteString>) {
