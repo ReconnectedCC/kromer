@@ -15,6 +15,7 @@ use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::KristErrorExt;
 use crate::errors::krist::{address::AddressError, websockets::WebSocketError, KristError};
 use crate::models::websockets::WebSocketMessageType;
+use crate::models::websockets::{WebSocketMessage, WebSocketMessageInner};
 use crate::websockets::types::common::WebSocketTokenData;
 use crate::websockets::types::convert_to_iso_string;
 use crate::websockets::{handler, utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
@@ -136,11 +137,16 @@ pub async fn gateway(
             }
 
             let cur_time = convert_to_iso_string(Utc::now());
-            let keepalive_time = WebSocketMessageType::Keepalive {
-                server_time: cur_time,
+            let message = WebSocketMessage {
+                ok: None,
+                id: None,
+                r#type: WebSocketMessageInner::Keepalive {
+                    server_time: cur_time,
+                },
             };
+
             let return_message =
-                serde_json::to_string(&keepalive_time).unwrap_or_else(|_| "{}".to_string()); // ...what
+                serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string()); // ...what
             let _ = session2.text(return_message).await;
 
             if Instant::now().duration_since(*alive2.lock().await) > CLIENT_TIMEOUT {

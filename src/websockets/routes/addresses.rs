@@ -3,7 +3,7 @@ use surrealdb::{engine::any::Any, Surreal};
 use crate::models::{
     addresses::AddressJson,
     error::ErrorResponse,
-    websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType},
+    websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
 };
 
 use crate::database::models::wallet::Model as Wallet;

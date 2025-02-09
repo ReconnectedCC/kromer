@@ -14,6 +14,7 @@ use crate::{
             IncomingWebsocketMessage, OutgoingWebSocketMessage, ResponseMessageType,
             WebSocketMessageType,
         },
+        websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
     },
 };
 
@@ -30,6 +31,7 @@ pub async fn process_text_msg(
     // TODO: potentially change how this serialization is handled, so that we can properly extract "Invalid Parameter" errors.
     let parsed_msg_result: Result<IncomingWebsocketMessage, serde_json::Error> =
         serde_json::from_str(msg);
+    let parsed_msg_result: Result<WebSocketMessage, serde_json::Error> = serde_json::from_str(msg);
 
     let parsed_msg = match parsed_msg_result {
         Ok(value) => value,

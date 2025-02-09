@@ -6,6 +6,7 @@ use crate::{
     models::{
         addresses::AddressJson,
         websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType},
+        websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
     },
 };
 

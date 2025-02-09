@@ -6,6 +6,9 @@ use crate::errors::wallet::WalletError;
 use crate::errors::KromerError;
 use crate::models::addresses::AddressJson;
 use crate::models::auth::LoginDetails;
+use crate::models::websockets::{
+    WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse,
+};
 
 pub async fn perform_login() {}
 

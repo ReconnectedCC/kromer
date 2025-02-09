@@ -10,7 +10,6 @@ use crate::models::transactions::{
     TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse,
     TransactionType,
 };
-use crate::models::websockets::WebSocketEventMessage;
 use crate::websockets::WebSocketServer;
 use crate::{routes::PaginationParams, AppState};
 
