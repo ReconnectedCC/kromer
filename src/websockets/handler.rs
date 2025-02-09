@@ -10,27 +10,21 @@ use crate::{
     models::{
         error::ErrorResponse,
         motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo},
-        websockets::{
-            IncomingWebsocketMessage, OutgoingWebSocketMessage, ResponseMessageType,
-            WebSocketMessageType,
-        },
         websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
     },
+    websockets::routes,
 };
 
 pub async fn process_text_msg(
     db: &Surreal<Any>,
     server: &WebSocketServer,
-    session: &mut actix_ws::Session,
     uuid: &Uuid,
     text: &str,
-) -> Result<(), KromerError> {
+) -> Result<WebSocketMessage, KromerError> {
     // strip leading and trailing whitespace (spaces, newlines, etc.)
     let msg = text.trim();
 
     // TODO: potentially change how this serialization is handled, so that we can properly extract "Invalid Parameter" errors.
-    let parsed_msg_result: Result<IncomingWebsocketMessage, serde_json::Error> =
-        serde_json::from_str(msg);
     let parsed_msg_result: Result<WebSocketMessage, serde_json::Error> = serde_json::from_str(msg);
 
     let parsed_msg = match parsed_msg_result {
@@ -42,46 +36,54 @@ pub async fn process_text_msg(
         }
     };
 
-    let msg_type = parsed_msg.message_type;
+    let msg_type = parsed_msg.r#type;
     tracing::debug!("Message type was: {:?}", msg_type);
     let msg_id = parsed_msg.id;
 
-    match msg_type {
-        WebSocketMessageType::Hello { motd } => Ok(()), // Not sent by client
-        WebSocketMessageType::Error { error } => Ok(()), // Not sent by client
-        WebSocketMessageType::Response { message } => Ok(()), // Not sent by client
-        WebSocketMessageType::Keepalive { server_time } => Ok(()), // Not sent by client
-        WebSocketMessageType::Address {
+    let msg: WebSocketMessage = match msg_type {
+        // WebSocketMessageInner::Error { error } => Ok(()), // Not sent by client
+        WebSocketMessageInner::Address {
             address,
             fetch_names,
         } => todo!(),
-        WebSocketMessageType::Login { login_details } => todo!(),
-        WebSocketMessageType::Logout => todo!(),
-        WebSocketMessageType::Me => todo!(),
-        WebSocketMessageType::SubmitBlock => todo!(),
-        WebSocketMessageType::Subscribe { event } => todo!(),
-        WebSocketMessageType::GetSubscriptionLevel => todo!(),
-        WebSocketMessageType::GetValidSubscriptionLevels => todo!(),
-        WebSocketMessageType::Unsubscribe { event } => todo!(),
-        WebSocketMessageType::MakeTransaction {
+        WebSocketMessageInner::Login { private_key } => {
+            routes::auth::perform_login(db, msg_id, private_key).await
+        }
+        WebSocketMessageInner::Logout => routes::auth::perform_logout(server, uuid, msg_id).await,
+        WebSocketMessageInner::Me => todo!(),
+        // WebSocketMessageInner::SubmitBlock => todo!(),
+        WebSocketMessageInner::Subscribe { event } => {
+            routes::subscriptions::subscribe(server, uuid, event, msg_id).await
+        }
+        WebSocketMessageInner::GetSubscriptionLevel => {
+            routes::subscriptions::get_subscription_level(server, uuid, msg_id).await
+        }
+        WebSocketMessageInner::GetValidSubscriptionLevels => {
+            routes::subscriptions::get_valid_subscription_levels(msg_id).await
+        }
+        WebSocketMessageInner::Unsubscribe { event } => {
+            routes::subscriptions::unsubscribe(server, uuid, event, msg_id).await
+        }
+        WebSocketMessageInner::MakeTransaction {
             private_key,
             to,
             amount,
             metadata,
-            request_id,
         } => todo!(),
-        WebSocketMessageType::Work => todo!(),
-        WebSocketMessageType::Unknown => todo!(),
-    }
+        WebSocketMessageInner::Work => todo!(),
+        _ => todo!(), // Responses not sent by client or unimplemented
+    };
+
+    Ok(msg)
 }
 
 pub async fn send_hello_message(session: &mut actix_ws::Session) {
     let cur_time = convert_to_iso_string(Utc::now());
 
-    let hello_message = OutgoingWebSocketMessage {
+    let hello_message = WebSocketMessage {
         ok: Some(true),
         id: None,
-        message: WebSocketMessageType::Hello {
+        r#type: WebSocketMessageInner::Hello {
             motd: Box::new(DetailedMotd {
                 server_time: cur_time,
                 motd: "Message of the day".to_string(),

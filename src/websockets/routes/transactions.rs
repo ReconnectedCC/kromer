@@ -7,7 +7,6 @@ use crate::{
     models::{
         error::ErrorResponse,
         transactions::TransactionType,
-        websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType},
         websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
     },
 };

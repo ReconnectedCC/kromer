@@ -14,7 +14,6 @@ use tokio::sync::Mutex;
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::KristErrorExt;
 use crate::errors::krist::{address::AddressError, websockets::WebSocketError, KristError};
-use crate::models::websockets::WebSocketMessageType;
 use crate::models::websockets::{WebSocketMessage, WebSocketMessageInner};
 use crate::websockets::types::common::WebSocketTokenData;
 use crate::websockets::types::convert_to_iso_string;
@@ -76,6 +75,7 @@ pub async fn gateway(
     server: web::Data<WebSocketServer>,
     token: web::Path<String>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let server = server.into_inner(); // lol
     let token = token.into_inner();
     tracing::info!("Request with token string: {token}");
 
@@ -183,20 +183,17 @@ pub async fn gateway(
                         let _ = session.text(error_msg).await;
                     } else {
                         tracing::debug!("Message received: {string}");
-                        // let wrapped_ws_data2 = wrapped_ws_data.clone();
-                        // let process_result = handler::process_text_msg(
-                        //     &state.db,
-                        //     wrapped_ws_data2,
-                        //     &mut session,
-                        //     &string,
-                        // )
-                        // .await;
 
-                        // if let Ok(Some(new_metadata)) = process_result {
-                        //     *wrapped_ws_data.lock().await = new_metadata;
-                        // } else if process_result.is_err() {
-                        //     tracing::error!("Error in processing message")
-                        // }
+                        let process_result =
+                            handler::process_text_msg(&state.db, &server, &uuid, &string).await;
+
+                        if let Ok(message) = process_result {
+                            let msg = serde_json::to_string(&message)
+                                .expect("Failed to serialize message into string");
+                            let _ = session.text(msg).await;
+                        } else {
+                            tracing::error!("Error in processing message")
+                        }
                     }
                 }
 

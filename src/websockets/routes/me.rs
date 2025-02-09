@@ -5,7 +5,6 @@ use crate::{
     errors::{wallet::WalletError, KromerError},
     models::{
         addresses::AddressJson,
-        websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType},
         websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
     },
 };
