@@ -45,67 +45,22 @@ pub async fn process_text_msg(
     let msg_id = parsed_msg.id;
 
     match msg_type {
+        WebSocketMessageType::Hello { motd } => Ok(()), // Not sent by client
+        WebSocketMessageType::Error { error } => Ok(()), // Not sent by client
+        WebSocketMessageType::Response { message } => Ok(()), // Not sent by client
+        WebSocketMessageType::Keepalive { server_time } => Ok(()), // Not sent by client
         WebSocketMessageType::Address {
             address,
             fetch_names,
-        } => {
-            ws_modification_data = get_address(address, fetch_names, msg_id, db).await;
-        }
-
-        WebSocketMessageType::Login {
-            login_details: Some(login_details),
-        } => {
-            let auth_result = perform_login(&ws_metadata, login_details, db).await;
-
-            // Generate the response if it's okay
-            if auth_result.is_ok() {
-                let new_auth_data = auth_result.unwrap();
-                let wrapped_ws_data = new_auth_data.0;
-                let wallet = new_auth_data.1;
-                let new_ws_modification_data = WsSessionModification {
-                    msg_type: Some(OutgoingWebSocketMessage {
-                        ok: Some(true),
-                        id: Some(msg_id),
-                        message: WebSocketMessageType::Response {
-                            message: ResponseMessageType::Login {
-                                address: Some(wallet),
-                                is_guest: false,
-                            },
-                        },
-                    }),
-                    wrapped_ws_data: Some(wrapped_ws_data),
-                };
-
-                ws_modification_data = new_ws_modification_data;
-            } else {
-                // If the auth failed, we can just perform a "me" request.
-                let me_data = route_get_me(msg_id, db, &ws_metadata).await;
-
-                if let Ok(me_data) = me_data {
-                    ws_modification_data = WsSessionModification {
-                        msg_type: Some(me_data),
-                        wrapped_ws_data: None,
-                    }
-                }
-            }
-        }
-        WebSocketMessageType::Logout => {
-            let auth_result = perform_logout(&ws_metadata).await;
-
-            let new_ws_modification_data = WsSessionModification {
-                msg_type: Some(OutgoingWebSocketMessage {
-                    ok: Some(true),
-                    id: Some(msg_id),
-                    message: WebSocketMessageType::Response {
-                        message: ResponseMessageType::Logout { is_guest: true },
-                    },
-                }),
-                wrapped_ws_data: Some(auth_result),
-            };
-
-            ws_modification_data = new_ws_modification_data;
-        }
-
+        } => todo!(),
+        WebSocketMessageType::Login { login_details } => todo!(),
+        WebSocketMessageType::Logout => todo!(),
+        WebSocketMessageType::Me => todo!(),
+        WebSocketMessageType::SubmitBlock => todo!(),
+        WebSocketMessageType::Subscribe { event } => todo!(),
+        WebSocketMessageType::GetSubscriptionLevel => todo!(),
+        WebSocketMessageType::GetValidSubscriptionLevels => todo!(),
+        WebSocketMessageType::Unsubscribe { event } => todo!(),
         WebSocketMessageType::MakeTransaction {
             private_key,
             to,
