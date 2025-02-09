@@ -10,6 +10,8 @@ use crate::models::transactions::{
     TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse,
     TransactionType,
 };
+use crate::models::websockets::WebSocketEventMessage;
+use crate::websockets::WebSocketServer;
 use crate::{routes::PaginationParams, AppState};
 
 #[get("")]
@@ -39,6 +41,7 @@ async fn transaction_list(
 #[post("")]
 async fn transaction_create(
     state: web::Data<AppState>,
+    server: web::Data<WebSocketServer>,
     details: web::Json<TransactionDetails>,
 ) -> Result<HttpResponse, KristError> {
     let details = details.into_inner();
@@ -72,9 +75,18 @@ async fn transaction_create(
         transaction_type: TransactionType::Transfer,
     };
     let response: Vec<Transaction> = db.insert("transaction").content(creation_data).await?;
-    let response = response.first().unwrap(); // the fuck man
+    let model = response.first().unwrap(); // the fuck man
+    let response: TransactionJson = model.clone().into();
 
-    Ok(HttpResponse::Ok().json(response))
+    let event = WebSocketEventMessage::new_transaction(response.clone()); // I love cloning <3
+    server.broadcast_event(event).await;
+
+    let final_response = TransactionResponse {
+        ok: true,
+        transaction: response,
+    };
+
+    Ok(HttpResponse::Ok().json(final_response))
 }
 
 #[get("/latest")]
