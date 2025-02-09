@@ -17,7 +17,6 @@ use crate::errors::krist::{address::AddressError, websockets::WebSocketError, Kr
 use crate::models::websockets::WebSocketMessageType;
 use crate::websockets::types::common::WebSocketTokenData;
 use crate::websockets::types::convert_to_iso_string;
-use crate::websockets::wrapped_ws::WrappedWsData;
 use crate::websockets::{handler, utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
 use crate::AppState;
 

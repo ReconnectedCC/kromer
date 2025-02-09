@@ -2,10 +2,7 @@ use crate::{
     models::websockets::{
         OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType, WsSessionModification,
     },
-    websockets::{
-        types::common::{WebSocketSubscriptionList, WebSocketSubscriptionType},
-        wrapped_ws::WrappedWsData,
-    },
+    websockets::types::common::WebSocketSubscriptionType,
 };
 
 pub fn get_subscription_level(

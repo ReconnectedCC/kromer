@@ -1,67 +1,21 @@
-use std::{fmt, str::FromStr};
-
+use dashmap::DashSet;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct WebSocketTokenData {
     pub address: String,
     pub private_key: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct WebSocketSubscriptionList {
-    #[serde(flatten)]
-    pub subscriptions: Vec<WebSocketSubscriptionType>,
+#[derive(Clone)]
+pub struct WebSocketSessionData {
+    pub address: String,
+    pub private_key: Option<String>,
+    pub session: actix_ws::Session,
+    pub subscriptions: DashSet<WebSocketSubscriptionType>,
 }
 
-impl WebSocketTokenData {
-    #[inline]
-    pub fn new(address: String, private_key: Option<String>) -> Self {
-        Self {
-            address,
-            private_key,
-        }
-    }
-}
-
-impl WebSocketSubscriptionList {
-    pub fn new() -> Self {
-        WebSocketSubscriptionList {
-            subscriptions: vec![
-                WebSocketSubscriptionType::OwnTransactions,
-                WebSocketSubscriptionType::Blocks,
-            ],
-        }
-    }
-
-    pub fn new_all_subs() -> Self {
-        WebSocketSubscriptionList {
-            subscriptions: vec![
-                WebSocketSubscriptionType::Blocks,
-                WebSocketSubscriptionType::OwnBlocks,
-                WebSocketSubscriptionType::Transactions,
-                WebSocketSubscriptionType::OwnTransactions,
-                WebSocketSubscriptionType::Names,
-                WebSocketSubscriptionType::OwnNames,
-                WebSocketSubscriptionType::Motd,
-            ],
-        }
-    }
-
-    pub fn to_string(&self) -> Vec<String> {
-        let subscriptions = &self.subscriptions;
-
-        let mut sub_strings: Vec<String> = Vec::new();
-
-        for subscription in subscriptions {
-            sub_strings.push(format!("{}", subscription));
-        }
-
-        sub_strings
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Hash, Eq, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 pub enum WebSocketSubscriptionType {
     Blocks,
@@ -73,7 +27,33 @@ pub enum WebSocketSubscriptionType {
     Motd,
 }
 
-impl FromStr for WebSocketSubscriptionType {
+impl WebSocketSubscriptionType {
+    pub fn is_valid(subscription_type: &str) -> bool {
+        subscription_type
+            .parse::<WebSocketSubscriptionType>()
+            .is_ok()
+    }
+
+    pub fn into_string(&self) -> String {
+        match self {
+            WebSocketSubscriptionType::Blocks => "blocks".to_owned(),
+            WebSocketSubscriptionType::OwnBlocks => "ownBlocks".to_owned(),
+            WebSocketSubscriptionType::Transactions => "transactions".to_owned(),
+            WebSocketSubscriptionType::OwnTransactions => "ownTransactions".to_owned(),
+            WebSocketSubscriptionType::Names => "names".to_owned(),
+            WebSocketSubscriptionType::OwnNames => "ownNames".to_owned(),
+            WebSocketSubscriptionType::Motd => "motd".to_owned(),
+        }
+    }
+}
+
+impl WebSocketSessionData {
+    pub fn is_guest(&self) -> bool {
+        self.address == *"guest"
+    }
+}
+
+impl std::str::FromStr for WebSocketSubscriptionType {
     type Err = ();
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -90,8 +70,8 @@ impl FromStr for WebSocketSubscriptionType {
     }
 }
 
-impl fmt::Display for WebSocketSubscriptionType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for WebSocketSubscriptionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Blocks => write!(f, "blocks"),
             Self::OwnBlocks => write!(f, "ownBlocks"),
@@ -104,53 +84,12 @@ impl fmt::Display for WebSocketSubscriptionType {
     }
 }
 
-// #[derive(Clone, Debug)]
-// pub enum WebSocketMessageType {
-//     Address,
-//     Login,
-//     Logout,
-//     Me,
-//     Subscribe,
-//     GetSubscriptionLevel,
-//     GetValidSubscriptionLevels,
-//     Unsubscribe,
-//     MakeTransaction,
-//     Motd,
-// }
-
-// impl FromStr for WebSocketMessageType {
-//     type Err = KromerError;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         match s {
-//             "address" => Ok(Self::Address),
-//             "login" => Ok(Self::Login),
-//             "logout" => Ok(Self::Logout),
-//             "me" => Ok(Self::Me),
-//             "subscribe" => Ok(Self::Me),
-//             "get_subscription_level" => Ok(Self::GetSubscriptionLevel),
-//             "get_valid_subscription_levels" => Ok(Self::GetValidSubscriptionLevels),
-//             "unsubscribe" => Ok(Self::Unsubscribe),
-//             "make_transaction" => Ok(Self::MakeTransaction),
-//             "motd" => Ok(Self::Motd),
-//             _ => Err(KromerError::WebSocket(WebSocketError::InvalidMessageType)),
-//         }
-//     }
-// }
-
-// impl fmt::Display for WebSocketMessageType {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             Self::Address => write!(f, "address"),
-//             Self::Login => write!(f, "login"),
-//             Self::Logout => write!(f, "logout"),
-//             Self::Me => write!(f, "me"),
-//             Self::Subscribe => write!(f, "subscribe"),
-//             Self::GetSubscriptionLevel => write!(f, "get_subscription_level"),
-//             Self::GetValidSubscriptionLevels => write!(f, "get_valid_subscription_levels"),
-//             Self::Unsubscribe => write!(f, "unsubscribe"),
-//             Self::MakeTransaction => write!(f, "make_transaction"),
-//             Self::Motd => write!(f, "motd"),
-//         }
-//     }
-// }
+impl WebSocketTokenData {
+    #[inline]
+    pub fn new(address: String, private_key: Option<String>) -> Self {
+        Self {
+            address,
+            private_key,
+        }
+    }
+}
