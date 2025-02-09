@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-use super::{routes::auth::perform_login, types::convert_to_iso_string, wrapped_ws::WrappedWsData};
+use super::{routes::auth::perform_login, types::convert_to_iso_string};
 
 use crate::websockets::routes::me::get_me as route_get_me;
 

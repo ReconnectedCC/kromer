@@ -2,7 +2,6 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::websockets::types::common::WebSocketSubscriptionType;
-use crate::websockets::wrapped_ws::WrappedWsData;
 
 use super::blocks::BlockJson;
 use super::deserialize_number_into_string;

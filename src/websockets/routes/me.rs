@@ -7,7 +7,6 @@ use crate::{
         addresses::AddressJson,
         websockets::{OutgoingWebSocketMessage, ResponseMessageType, WebSocketMessageType},
     },
-    websockets::wrapped_ws::WrappedWsData,
 };
 
 pub async fn get_me(

@@ -177,20 +177,20 @@ pub async fn gateway(
                         let _ = session.text(error_msg).await;
                     } else {
                         tracing::debug!("Message received: {string}");
-                        let wrapped_ws_data2 = wrapped_ws_data.clone();
-                        let process_result = handler::process_text_msg(
-                            &state.db,
-                            wrapped_ws_data2,
-                            &mut session,
-                            &string,
-                        )
-                        .await;
+                        // let wrapped_ws_data2 = wrapped_ws_data.clone();
+                        // let process_result = handler::process_text_msg(
+                        //     &state.db,
+                        //     wrapped_ws_data2,
+                        //     &mut session,
+                        //     &string,
+                        // )
+                        // .await;
 
-                        if let Ok(Some(new_metadata)) = process_result {
-                            *wrapped_ws_data.lock().await = new_metadata;
-                        } else if process_result.is_err() {
-                            tracing::error!("Error in processing message")
-                        }
+                        // if let Ok(Some(new_metadata)) = process_result {
+                        //     *wrapped_ws_data.lock().await = new_metadata;
+                        // } else if process_result.is_err() {
+                        //     tracing::error!("Error in processing message")
+                        // }
                     }
                 }
 
