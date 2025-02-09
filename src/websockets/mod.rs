@@ -4,7 +4,6 @@ pub mod routes;
 pub mod types;
 pub mod utils;
 pub mod wrapped_ws;
-pub mod ws_server;
 
 use std::{sync::Arc, time::Duration};
 

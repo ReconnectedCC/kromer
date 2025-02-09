@@ -1,5 +1,4 @@
 pub mod common;
-pub mod server;
 
 use chrono::Utc;
 
