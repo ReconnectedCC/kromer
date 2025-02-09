@@ -17,7 +17,8 @@ use crate::errors::krist::{address::AddressError, websockets::WebSocketError, Kr
 use crate::models::websockets::WebSocketMessageType;
 use crate::websockets::types::common::WebSocketTokenData;
 use crate::websockets::types::convert_to_iso_string;
-use crate::websockets::{utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
+use crate::websockets::wrapped_ws::WrappedWsData;
+use crate::websockets::{handler, utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
 use crate::AppState;
 
 #[derive(serde::Deserialize)]
@@ -71,7 +72,7 @@ pub async fn setup_ws(
 pub async fn gateway(
     req: HttpRequest,
     body: web::Payload,
-    _state: web::Data<AppState>,
+    state: web::Data<AppState>,
     server: web::Data<WebSocketServer>,
     token: web::Path<String>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -111,6 +112,8 @@ pub async fn gateway(
         return Ok(response);
     }
     let data = data_result.unwrap(); // SAFETY: We handled the error above
+    let wrapped_ws_data = WrappedWsData::new(uuid, data.address, data.private_key);
+    let wrapped_ws_data = Arc::new(Mutex::new(wrapped_ws_data));
 
     let mut stream = stream
         .max_frame_size(64 * 1024)
@@ -123,7 +126,9 @@ pub async fn gateway(
     let mut session2 = session.clone();
     let alive2 = alive.clone();
 
-    // Heartbeat handling, should be replaced with the ping message later
+    handler::send_hello_message(&mut session).await;
+
+    // Heartbeat handling
     actix_web::rt::spawn(async move {
         let mut interval = time::interval(HEARTBEAT_INTERVAL);
 
@@ -160,12 +165,43 @@ pub async fn gateway(
                 }
 
                 AggregatedMessage::Text(string) => {
-                    tracing::info!("Relaying text, {string}");
+                    if string.chars().count() > 512 {
+                        // TODO: Possibly use error message struct in models
+                        // This isn't super necessary though and this shortcut saves some unnecessary error handling...
+                        let error_msg = json!({
+                            "ok": "false",
+                            "error": "message_too_long",
+                            "message": "Message larger than 512 characters",
+                            "type": "error"
+                        })
+                        .to_string();
+                        tracing::info!("Message received was larger than 512 characters");
 
-                    if session.text(string).await.is_err() {
-                        tracing::error!("Failed to send text back to session");
-                        return;
+                        let _ = session.text(error_msg).await;
+                    } else {
+                        tracing::debug!("Message received: {string}");
+                        let wrapped_ws_data2 = wrapped_ws_data.clone();
+                        let process_result = handler::process_text_msg(
+                            &state.db,
+                            wrapped_ws_data2,
+                            &mut session,
+                            &string,
+                        )
+                        .await;
+
+                        if let Ok(Some(new_metadata)) = process_result {
+                            *wrapped_ws_data.lock().await = new_metadata;
+                        } else if process_result.is_err() {
+                            tracing::error!("Error in processing message")
+                        }
                     }
+
+                    // handler::process_text_msg(db, ws_metadata, &mut session, text)
+
+                    // if session.text(string).await.is_err() {
+                    //     tracing::error!("Failed to send text back to session");
+                    //     return;
+                    // }
                 }
 
                 AggregatedMessage::Close(reason) => {

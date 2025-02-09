@@ -28,7 +28,7 @@ pub async fn make_transaction(
 ) -> WsSessionModification {
     let mut outgoing_message: OutgoingWebSocketMessage = OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id.clone(),
+        id: Some(msg_id.clone()),
         message: WebSocketMessageType::Response {
             message: ResponseMessageType::Me {
                 is_guest: true,
@@ -69,7 +69,7 @@ pub async fn make_transaction(
                         let time = chrono::Utc::now().to_rfc3339();
                         outgoing_message = OutgoingWebSocketMessage {
                             ok: Some(true),
-                            id: msg_id,
+                            id: Some(msg_id),
                             message: WebSocketMessageType::Response {
                                 message: ResponseMessageType::MakeTransaction {
                                     from: sender.address,
@@ -110,7 +110,7 @@ pub async fn make_transaction(
 fn format_invalid_parameter(msg_id: String, parameter: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "invalid_parameter".to_string(),
@@ -123,7 +123,7 @@ fn format_invalid_parameter(msg_id: String, parameter: String) -> OutgoingWebSoc
 fn format_missing_parameter(msg_id: String, parameter: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "missing_parameter".to_string(),
@@ -136,7 +136,7 @@ fn format_missing_parameter(msg_id: String, parameter: String) -> OutgoingWebSoc
 fn format_not_found_error(msg_id: String, address: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "address_not_found".to_string(),
@@ -149,7 +149,7 @@ fn format_not_found_error(msg_id: String, address: String) -> OutgoingWebSocketM
 fn format_insufficient_funds_error(msg_id: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "insufficient_funds".to_string(),
@@ -162,7 +162,7 @@ fn format_insufficient_funds_error(msg_id: String) -> OutgoingWebSocketMessage {
 fn format_database_error(msg_id: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "database_error".to_string(),

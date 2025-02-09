@@ -22,7 +22,7 @@ pub async fn get_me(
         };
         return Ok(OutgoingWebSocketMessage {
             ok: Some(true),
-            id: msg_id,
+            id: Some(msg_id),
             message: WebSocketMessageType::Response {
                 message: me_message,
             },
@@ -45,7 +45,7 @@ pub async fn get_me(
 
     Ok(OutgoingWebSocketMessage {
         ok: Some(true),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Response {
             message: me_message,
         },

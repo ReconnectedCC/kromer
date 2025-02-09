@@ -152,7 +152,8 @@ pub struct IncomingWebsocketMessage {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct OutgoingWebSocketMessage {
     pub ok: Option<bool>,
-    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>, // guh
     #[serde(flatten)]
     pub message: WebSocketMessageType,
 }

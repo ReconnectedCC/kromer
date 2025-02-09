@@ -29,7 +29,7 @@ pub async fn get_address(
             if let Some(wallet) = wallet.unwrap() {
                 outgoing_message = OutgoingWebSocketMessage {
                     ok: Some(true),
-                    id: msg_id,
+                    id: Some(msg_id),
                     message: WebSocketMessageType::Response {
                         message: ResponseMessageType::Address {
                             address: AddressJson::from(wallet),
@@ -53,7 +53,7 @@ pub async fn get_address(
 fn format_missing_parameter(msg_id: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "missing_parameter".to_string(),
@@ -66,7 +66,7 @@ fn format_missing_parameter(msg_id: String) -> OutgoingWebSocketMessage {
 fn format_not_found_error(address: String, msg_id: String) -> OutgoingWebSocketMessage {
     OutgoingWebSocketMessage {
         ok: Some(false),
-        id: msg_id,
+        id: Some(msg_id),
         message: WebSocketMessageType::Error {
             error: ErrorResponse {
                 error: "address_not_found".to_string(),
