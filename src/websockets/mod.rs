@@ -9,13 +9,13 @@ use std::{sync::Arc, time::Duration};
 use actix_web::rt::time;
 use actix_ws::Session;
 use bytestring::ByteString;
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use errors::WebSocketServerError;
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use surrealdb::Uuid;
 use tokio::sync::Mutex;
 
-use types::common::WebSocketTokenData;
+use types::common::{WebSocketSessionData, WebSocketSubscriptionType, WebSocketTokenData};
 
 use crate::models::websockets::WebSocketEventMessage;
 
@@ -30,7 +30,7 @@ pub struct WebSocketServer {
 
 #[derive(Clone)]
 pub struct WebSocketServerInner {
-    sessions: DashMap<Uuid, Session>,
+    sessions: DashMap<Uuid, WebSocketSessionData>,
     pending_tokens: DashMap<Uuid, WebSocketTokenData>,
 }
 
@@ -46,8 +46,20 @@ impl WebSocketServer {
         }
     }
 
-    pub async fn insert_session(&self, uuid: Uuid, session: Session) {
-        self.inner.lock().await.sessions.insert(uuid, session);
+    pub async fn insert_session(&self, uuid: Uuid, session: Session, data: WebSocketTokenData) {
+        let subscriptions = DashSet::from_iter(vec![
+            WebSocketSubscriptionType::OwnTransactions,
+            WebSocketSubscriptionType::Blocks,
+        ]);
+
+        let session_data = WebSocketSessionData {
+            address: data.address,
+            private_key: data.private_key,
+            session,
+            subscriptions,
+        };
+
+        self.inner.lock().await.sessions.insert(uuid, session_data);
     }
 
     pub async fn cleanup_session(&self, uuid: &Uuid) {
@@ -114,8 +126,8 @@ impl WebSocketServer {
             tracing::info!("Sending msg: {msg}");
 
             futures.push(async move {
-                let session = entry.value_mut();
-                session.text(msg).await
+                let data = entry.value_mut();
+                data.session.text(msg).await
             });
         }
 

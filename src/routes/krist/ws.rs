@@ -112,15 +112,12 @@ pub async fn gateway(
     }
     let data = data_result.unwrap(); // SAFETY: We handled the error above
 
-    let wrapped_ws_data = WrappedWsData::new(uuid, data.address, data.private_key);
-    let wrapped_ws_data = Arc::new(Mutex::new(wrapped_ws_data));
-
     let mut stream = stream
         .max_frame_size(64 * 1024)
         .aggregate_continuations()
         .max_continuation_size(2 * 1024 * 1024);
 
-    server.insert_session(uuid, session.clone()).await; // Not a big fan of cloning but here it is needed.
+    server.insert_session(uuid, session.clone(), data).await; // Not a big fan of cloning but here it is needed.
 
     let alive = Arc::new(Mutex::new(Instant::now()));
     let mut session2 = session.clone();
