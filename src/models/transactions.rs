@@ -82,9 +82,9 @@ impl From<transaction::Model> for TransactionJson {
         let name_data = TransactionNameData::parse_opt_ref(&transaction.metadata);
 
         Self {
-            id: 0,                                    // We dont do incremental IDs, do we give a shit?
-            from: Some(transaction.from.to_string()), // TODO: use address actual address instead.
-            to: Some(transaction.to.to_string()),     // TODO: use address actual address instead.
+            id: 0, // We dont do incremental IDs, do we give a shit?
+            from: Some(transaction.from),
+            to: Some(transaction.to),
             value: transaction.amount,
             time: transaction.timestamp.to_raw(),
             name: None, // TODO: Populate this later, maybe with a separate function.
