@@ -1,9 +1,14 @@
 use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Instant;
 
+use actix_web::rt::time;
 use actix_web::{get, post, HttpRequest};
 use actix_web::{web, HttpResponse};
+use actix_ws::AggregatedMessage;
 use serde_json::json;
 use surrealdb::Uuid;
+use tokio::sync::Mutex;
 
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::KristErrorExt;
@@ -102,32 +107,75 @@ pub async fn gateway(
 
         return Ok(response);
     }
+    let data = data_result.unwrap(); // SAFETY: We handled the error above
 
     let mut stream = stream
         .max_frame_size(64 * 1024)
         .aggregate_continuations()
         .max_continuation_size(2 * 1024 * 1024);
 
-    // This is a one off message, and we don't want to actually open the server handling
-    // if uuid_result.is_err() {
-    //     tracing::info!("Token {token} was not convertible into UUID");
+    server.insert_session(uuid, session.clone()).await; // Not a big fan of cloning but here it is needed.
 
-    //     return send_error_message(req, body).await;
-    // }
+    let alive = Arc::new(Mutex::new(Instant::now()));
+    let mut session2 = session.clone();
+    let alive2 = alive.clone();
 
-    Ok(response)
-}
+    // Heartbeat handling, should be replaced with the ping message later
+    actix_web::rt::spawn(async move {
+        let mut interval = time::interval(HEARTBEAT_INTERVAL);
 
-async fn send_error_message(
-    req: HttpRequest,
-    body: web::Payload,
-) -> Result<HttpResponse, KristError> {
-    let (response, mut session, _msg_stream) =
-        actix_ws::handle(&req, body).map_err(|_| WebSocketError::HandshakeError)?;
+        loop {
+            interval.tick().await;
+            if session2.ping(b"").await.is_err() {
+                break;
+            }
 
-    let error_msg = json!({"ok": false, "error": "invalid_websocket_token", "message": "Invalid websocket token", "type": "error"});
+            if Instant::now().duration_since(*alive2.lock().await) > CLIENT_TIMEOUT {
+                let _ = session2.close(None).await;
+                break;
+            }
+        }
+    });
 
-    let _result = session.text(error_msg.to_string()).await;
+    actix_web::rt::spawn(async move {
+        while let Some(Ok(msg)) = stream.recv().await {
+            match msg {
+                AggregatedMessage::Ping(bytes) => {
+                    if session.pong(&bytes).await.is_err() {
+                        tracing::error!("Failed to send pong back to session");
+                        return;
+                    }
+                }
+
+                AggregatedMessage::Text(string) => {
+                    tracing::info!("Relaying text, {string}");
+
+                    if session.text(string).await.is_err() {
+                        tracing::error!("Failed to send text back to session");
+                        return;
+                    }
+                }
+
+                AggregatedMessage::Close(reason) => {
+                    let _ = session.close(reason).await;
+
+                    tracing::info!("Got close, cleaning up");
+                    server.cleanup_session(&uuid).await;
+
+                    return;
+                }
+
+                AggregatedMessage::Pong(_) => {
+                    *alive.lock().await = Instant::now();
+                }
+
+                _ => (), // Binary data is just ignored
+            }
+        }
+
+        let _ = session.close(None).await;
+        server.cleanup_session(&uuid).await;
+    });
 
     Ok(response)
 }
