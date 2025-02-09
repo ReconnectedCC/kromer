@@ -60,8 +60,6 @@ pub async fn process_text_msg(
         wrapped_ws_data: None,
     };
 
-    tracing::debug!("{:?}", msg_type);
-
     match msg_type {
         WebSocketMessageType::Address {
             address,
@@ -98,9 +96,10 @@ pub async fn process_text_msg(
             } else {
                 // If the auth failed, we can just perform a "me" request.
                 let me_data = route_get_me(msg_id, db, &ws_metadata).await;
-                if me_data.is_ok() {
+
+                if let Ok(me_data) = me_data {
                     ws_modification_data = WsSessionModification {
-                        msg_type: Some(me_data.unwrap()),
+                        msg_type: Some(me_data),
                         wrapped_ws_data: None,
                     }
                 }

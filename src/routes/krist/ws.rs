@@ -112,6 +112,7 @@ pub async fn gateway(
         return Ok(response);
     }
     let data = data_result.unwrap(); // SAFETY: We handled the error above
+
     let wrapped_ws_data = WrappedWsData::new(uuid, data.address, data.private_key);
     let wrapped_ws_data = Arc::new(Mutex::new(wrapped_ws_data));
 
@@ -195,13 +196,6 @@ pub async fn gateway(
                             tracing::error!("Error in processing message")
                         }
                     }
-
-                    // handler::process_text_msg(db, ws_metadata, &mut session, text)
-
-                    // if session.text(string).await.is_err() {
-                    //     tracing::error!("Failed to send text back to session");
-                    //     return;
-                    // }
                 }
 
                 AggregatedMessage::Close(reason) => {
