@@ -6,6 +6,7 @@ use actix_web::rt::time;
 use actix_web::{get, post, HttpRequest};
 use actix_web::{web, HttpResponse};
 use actix_ws::AggregatedMessage;
+use chrono::Utc;
 use serde_json::json;
 use surrealdb::Uuid;
 use tokio::sync::Mutex;
@@ -13,7 +14,9 @@ use tokio::sync::Mutex;
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::krist::KristErrorExt;
 use crate::errors::krist::{address::AddressError, websockets::WebSocketError, KristError};
+use crate::models::websockets::WebSocketMessageType;
 use crate::websockets::types::common::WebSocketTokenData;
+use crate::websockets::types::convert_to_iso_string;
 use crate::websockets::{utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
 use crate::AppState;
 
@@ -68,7 +71,7 @@ pub async fn setup_ws(
 pub async fn gateway(
     req: HttpRequest,
     body: web::Payload,
-    state: web::Data<AppState>,
+    _state: web::Data<AppState>,
     server: web::Data<WebSocketServer>,
     token: web::Path<String>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -130,6 +133,14 @@ pub async fn gateway(
                 break;
             }
 
+            let cur_time = convert_to_iso_string(Utc::now());
+            let keepalive_time = WebSocketMessageType::Keepalive {
+                server_time: cur_time,
+            };
+            let return_message =
+                serde_json::to_string(&keepalive_time).unwrap_or_else(|_| "{}".to_string()); // ...what
+            let _ = session2.text(return_message).await;
+
             if Instant::now().duration_since(*alive2.lock().await) > CLIENT_TIMEOUT {
                 let _ = session2.close(None).await;
                 break;
@@ -137,6 +148,7 @@ pub async fn gateway(
         }
     });
 
+    // Messgage handling code here
     actix_web::rt::spawn(async move {
         while let Some(Ok(msg)) = stream.recv().await {
             match msg {
