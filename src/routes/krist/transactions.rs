@@ -77,8 +77,8 @@ async fn transaction_create(
     let model = response.first().unwrap(); // the fuck man
     let response: TransactionJson = model.clone().into();
 
-    let event = WebSocketEventMessage::new_transaction(response.clone()); // I love cloning <3
-    server.broadcast_event(event).await;
+    // let event = WebSocketEventMessage::new_transaction(response.clone()); // I love cloning <3
+    // server.broadcast_event(event).await;
 
     let final_response = TransactionResponse {
         ok: true,
