@@ -38,7 +38,7 @@ pub async fn process_text_msg(
 
     let msg_type = parsed_msg.r#type;
     tracing::debug!("Message type was: {:?}", msg_type);
-    let msg_id = parsed_msg.id;
+    let msg_id = parsed_msg.id; // NOTE: This is probably gonna error, lol
 
     let msg: WebSocketMessage = match msg_type {
         // WebSocketMessageInner::Error { error } => Ok(()), // Not sent by client
