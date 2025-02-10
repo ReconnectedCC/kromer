@@ -1,16 +1,12 @@
-use std::sync::Arc;
-
 use chrono::Utc;
 use surrealdb::{engine::any::Any, Surreal, Uuid};
-use tokio::sync::Mutex;
 
 use super::{types::convert_to_iso_string, WebSocketServer};
 use crate::{
     errors::{websocket::WebSocketError, KromerError},
     models::{
-        error::ErrorResponse,
         motd::{Constants, CurrencyInfo, DetailedMotd, PackageInfo},
-        websockets::{WebSocketMessage, WebSocketMessageInner, WebSocketMessageResponse},
+        websockets::{WebSocketMessage, WebSocketMessageInner},
     },
     websockets::routes,
 };
@@ -50,7 +46,7 @@ pub async fn process_text_msg(
             routes::auth::perform_login(db, msg_id, private_key).await
         }
         WebSocketMessageInner::Logout => routes::auth::perform_logout(server, uuid, msg_id).await,
-        WebSocketMessageInner::Me => todo!(),
+        WebSocketMessageInner::Me => routes::me::get_myself(db, server, uuid, msg_id).await,
         // WebSocketMessageInner::SubmitBlock => todo!(),
         WebSocketMessageInner::Subscribe { event } => {
             routes::subscriptions::subscribe(server, uuid, event, msg_id).await

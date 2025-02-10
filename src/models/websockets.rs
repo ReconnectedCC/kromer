@@ -28,6 +28,10 @@ pub enum WebSocketMessageInner {
         #[serde(flatten)]
         data: WebSocketMessageResponse,
     },
+    Error {
+        error: String,
+        message: String,
+    },
     Work,
     MakeTransaction {
         /// The privatekey of your address.
@@ -187,7 +191,7 @@ impl WebSocketMessageInner {
             WebSocketMessageInner::MakeTransaction { .. } => "make_transaction",
             WebSocketMessageInner::Work => "work",
             WebSocketMessageInner::Hello { .. } => "hello",
-            // WebSocketMessageInner::Error { .. } => "error",
+            WebSocketMessageInner::Error { .. } => "error",
             WebSocketMessageInner::Response { .. } => "response",
             WebSocketMessageInner::Keepalive { .. } => "keepalive",
             // WebSocketMessageInner::Unknown => "unknown",
