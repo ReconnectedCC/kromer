@@ -41,13 +41,15 @@ pub async fn process_text_msg(
         WebSocketMessageInner::Address {
             address,
             fetch_names,
-        } => todo!(),
+        } => {
+            let fetch_names = fetch_names.unwrap_or(false);
+            routes::addresses::get_address(db, address, fetch_names, msg_id).await
+        }
         WebSocketMessageInner::Login { private_key } => {
             routes::auth::perform_login(db, msg_id, private_key).await
         }
         WebSocketMessageInner::Logout => routes::auth::perform_logout(server, uuid, msg_id).await,
         WebSocketMessageInner::Me => routes::me::get_myself(db, server, uuid, msg_id).await,
-        // WebSocketMessageInner::SubmitBlock => todo!(),
         WebSocketMessageInner::Subscribe { event } => {
             routes::subscriptions::subscribe(server, uuid, event, msg_id).await
         }
@@ -61,10 +63,10 @@ pub async fn process_text_msg(
             routes::subscriptions::unsubscribe(server, uuid, event, msg_id).await
         }
         WebSocketMessageInner::MakeTransaction {
-            private_key,
-            to,
-            amount,
-            metadata,
+            private_key: _,
+            to: _,
+            amount: _,
+            metadata: _,
         } => todo!(),
         WebSocketMessageInner::Work => todo!(),
         _ => todo!(), // Responses not sent by client or unimplemented
