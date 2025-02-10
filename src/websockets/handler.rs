@@ -70,8 +70,22 @@ pub async fn process_text_msg(
             routes::transactions::make_transaction(db, private_key, to, amount, metadata, msg_id)
                 .await
         }
-        WebSocketMessageInner::Work => todo!(),
-        _ => todo!(), // Responses not sent by client or unimplemented
+        WebSocketMessageInner::Work => WebSocketMessage {
+            ok: Some(true),
+            id: msg_id,
+            r#type: WebSocketMessageInner::Error {
+                error: "mining_disabled".to_owned(),
+                message: "Mining disabled".to_owned(),
+            },
+        },
+        _ => WebSocketMessage {
+            ok: Some(true),
+            id: msg_id,
+            r#type: WebSocketMessageInner::Error {
+                error: "invalid_message_type".to_owned(),
+                message: "Invalid message type".to_owned(),
+            },
+        }, // Responses not sent by client or unimplemented
     };
 
     Ok(msg)
