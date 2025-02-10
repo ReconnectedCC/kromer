@@ -17,6 +17,8 @@ use tokio::sync::Mutex;
 
 use types::common::{WebSocketSessionData, WebSocketSubscriptionType, WebSocketTokenData};
 
+use crate::models::websockets::WebSocketMessage;
+
 // use crate::models::websockets::WebSocketEventMessage;
 
 pub const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -141,13 +143,14 @@ impl WebSocketServer {
         Vec::new()
     }
 
-    // /// Broadcast an event to all connected clients
-    // pub async fn broadcast_event(&self, event: WebSocketEventMessage) {
-    //     let msg =
-    //         serde_json::to_string(&event).expect("Failed to turn event message into a string");
+    /// Broadcast an event to all connected clients
+    pub async fn broadcast_event(&self, event: WebSocketMessage) {
+        let msg =
+            serde_json::to_string(&event).expect("Failed to turn event message into a string");
 
-    //     self.broadcast(msg).await;
-    // }
+        // TODO: Subscription check
+        self.broadcast(msg).await;
+    }
 
     /// Broadcast a message to all connected clients
     pub async fn broadcast(&self, msg: impl Into<ByteString>) {

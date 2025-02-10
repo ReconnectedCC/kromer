@@ -32,6 +32,10 @@ pub enum WebSocketMessageInner {
         error: String,
         message: String,
     },
+    Event {
+        #[serde(flatten)]
+        event: WebSocketEvent,
+    },
     Work,
     MakeTransaction {
         /// The privatekey of your address.
@@ -127,6 +131,31 @@ pub enum WebSocketMessageResponse {
     },
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "event", rename_all = "camelCase")]
+pub enum WebSocketEvent {
+    Block {
+        block: super::blocks::BlockJson,
+        new_work: i64,
+    },
+    Transaction {
+        transaction: super::transactions::TransactionJson,
+    },
+    Name {
+        name: super::names::NameJson,
+    },
+}
+
+impl WebSocketMessage {
+    pub fn new_event(event: WebSocketEvent) -> WebSocketMessage {
+        WebSocketMessage {
+            ok: None,
+            id: None,
+            r#type: WebSocketMessageInner::Event { event },
+        }
+    }
+}
+
 // #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 // pub struct WebSocketEventMessage {
 //     #[serde(rename = "type")]
@@ -193,6 +222,7 @@ impl WebSocketMessageInner {
             WebSocketMessageInner::Error { .. } => "error",
             WebSocketMessageInner::Response { .. } => "response",
             WebSocketMessageInner::Keepalive { .. } => "keepalive",
+            WebSocketMessageInner::Event { .. } => "event",
             // WebSocketMessageInner::Unknown => "unknown",
         }
     }

@@ -10,6 +10,7 @@ use crate::models::transactions::{
     TransactionDetails, TransactionJson, TransactionListResponse, TransactionResponse,
     TransactionType,
 };
+use crate::models::websockets::{WebSocketEvent, WebSocketMessage};
 use crate::websockets::WebSocketServer;
 use crate::{routes::PaginationParams, AppState};
 
@@ -77,8 +78,10 @@ async fn transaction_create(
     let model = response.first().unwrap(); // the fuck man
     let response: TransactionJson = model.clone().into();
 
-    // let event = WebSocketEventMessage::new_transaction(response.clone()); // I love cloning <3
-    // server.broadcast_event(event).await;
+    let event = WebSocketMessage::new_event(WebSocketEvent::Transaction {
+        transaction: response.clone(),
+    });
+    server.broadcast_event(event).await;
 
     let final_response = TransactionResponse {
         ok: true,
