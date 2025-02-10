@@ -101,7 +101,7 @@ impl WebSocketServer {
         let (_uuid, token) = inner
             .pending_tokens
             .remove(uuid)
-            .ok_or_else(|| WebSocketServerError::TokenNotFound)?;
+            .ok_or(WebSocketServerError::TokenNotFound)?;
 
         Ok(token)
     }
@@ -141,7 +141,7 @@ impl WebSocketServer {
         Vec::new()
     }
 
-    /// Broadcast an event to all connected clients
+    // /// Broadcast an event to all connected clients
     // pub async fn broadcast_event(&self, event: WebSocketEventMessage) {
     //     let msg =
     //         serde_json::to_string(&event).expect("Failed to turn event message into a string");
@@ -167,7 +167,7 @@ impl WebSocketServer {
         }
 
         while let Some(result) = futures.next().await {
-            if let Err(_) = result {
+            if result.is_err() {
                 tracing::warn!("Got an unexpected closed session");
             }
         }

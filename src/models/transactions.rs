@@ -22,6 +22,7 @@ pub struct TransactionDetails {
     pub password: String,
     pub to: String,
     pub amount: Decimal,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
 }
 
@@ -36,6 +37,7 @@ pub struct AddressTransactionQuery {
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     #[serde(rename = "includeMined")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub include_mined: Option<bool>,
 }
 
@@ -45,9 +47,11 @@ pub struct TransactionJson {
     pub id: i64,
 
     /// The sender of this transaction.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,
 
     /// The recipient of this transaction. This may be `name` if the transaction was a name purchase, or `a` if it was a name's data change.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
 
     /// The amount of Krist transferred in this transaction. Can be 0, notably if the transaction was a name's data change.
@@ -57,9 +61,13 @@ pub struct TransactionJson {
     pub time: String,
 
     /// The name associated with this transaction, without the `.kst` suffix.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sent_metaname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sent_name: Option<String>,
     #[serde(rename = "type")]
     pub transaction_type: TransactionType,

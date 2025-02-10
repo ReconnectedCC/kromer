@@ -84,7 +84,6 @@ pub enum WebSocketMessageResponse {
     },
 
     MakeTransaction {
-        #[serde(flatten)]
         transaction: TransactionJson,
     },
 

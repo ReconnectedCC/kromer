@@ -99,7 +99,7 @@ pub async fn gateway(
     let uuid = uuid_result.unwrap(); // SAFETY: We handled the error above
 
     let data_result = server.use_token(&uuid).await;
-    if let Err(_) = data_result {
+    if data_result.is_err() {
         let error = json!({
             "ok": false,
             "error": "invalid_websocket_token",

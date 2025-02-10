@@ -37,7 +37,6 @@ pub async fn process_text_msg(
     let msg_id = parsed_msg.id; // NOTE: This is probably gonna error, lol
 
     let msg: WebSocketMessage = match msg_type {
-        // WebSocketMessageInner::Error { error } => Ok(()), // Not sent by client
         WebSocketMessageInner::Address {
             address,
             fetch_names,
@@ -63,11 +62,14 @@ pub async fn process_text_msg(
             routes::subscriptions::unsubscribe(server, uuid, event, msg_id).await
         }
         WebSocketMessageInner::MakeTransaction {
-            private_key: _,
-            to: _,
-            amount: _,
-            metadata: _,
-        } => todo!(),
+            private_key,
+            to,
+            amount,
+            metadata,
+        } => {
+            routes::transactions::make_transaction(db, private_key, to, amount, metadata, msg_id)
+                .await
+        }
         WebSocketMessageInner::Work => todo!(),
         _ => todo!(), // Responses not sent by client or unimplemented
     };
