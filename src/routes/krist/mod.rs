@@ -6,7 +6,8 @@ mod wallet;
 mod ws;
 
 use actix_web::web;
-
+use utoipa::OpenApi;
+use crate::routes::krist::transactions::__path_transaction_list;
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/lookup").configure(lookup::config));
 
@@ -16,3 +17,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.configure(names::config);
     cfg.configure(misc::config);
 }
+
+#[derive(OpenApi)]
+#[openapi(paths(transaction_list))]
+pub struct TransactionsApiDoc;

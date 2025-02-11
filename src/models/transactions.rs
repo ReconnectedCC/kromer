@@ -1,5 +1,6 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 use crate::database::models::transaction;
 use transaction::TransactionNameData;
@@ -44,7 +45,7 @@ pub struct AddressTransactionQuery {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct TransactionJson {
     /// The ID of this transaction.
-    pub id: i64,
+    pub id: Option<Thing>,
 
     /// The sender of this transaction.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -90,7 +91,7 @@ impl From<transaction::Model> for TransactionJson {
         let name_data = TransactionNameData::parse_opt_ref(&transaction.metadata);
 
         Self {
-            id: 0, // We dont do incremental IDs, do we give a shit?
+            id: transaction.id, // We dont do incremental IDs, do we give a shit?
             from: Some(transaction.from),
             to: Some(transaction.to),
             value: transaction.amount,

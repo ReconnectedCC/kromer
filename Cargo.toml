@@ -1,10 +1,21 @@
 [package]
+default-run = "kromer"
 name = "kromer"
 version = "0.2.1"
-author = "ReconnectedCC Team (@bananasov, @uerkw, @ElonGates, @EmmaKnijn, @dimaguy)"
+authors = ["@bananasov", "@uerkw", "@ElonGates", "@EmmaKnijn", "@dimaguy"]
 license = "GPL-3.0"
 repository = "https://github.com/ReconnectedCC/kromer/"
 edition = "2021"
+
+[workspace]
+members = [
+    ".",
+    "gen_openapi"
+]
+
+[[bin]]
+name="gen_openapi"
+path = "gen_openapi/src/gen_openapi.rs"
 
 [dependencies]
 dotenvy = "0.15.7"
@@ -32,3 +43,5 @@ hex = "0.4.3"
 actix-files = "0.6.6"
 dashmap = "6.1.0"
 bytestring = "1.4.0"
+utoipa = {version = "5.3.1", features = ["actix_extras"] }
+utoipa-actix-web = "0.1.2"

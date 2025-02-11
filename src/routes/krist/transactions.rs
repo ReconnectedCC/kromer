@@ -14,8 +14,13 @@ use crate::models::websockets::{WebSocketEvent, WebSocketMessage};
 use crate::websockets::WebSocketServer;
 use crate::{routes::PaginationParams, AppState};
 
+#[utoipa::path(
+    responses(
+        (status=200, description="Transaction: {}", body = str)
+    )
+)]
 #[get("")]
-async fn transaction_list(
+pub async fn transaction_list(
     state: web::Data<AppState>,
     query: web::Query<PaginationParams>,
 ) -> Result<HttpResponse, KristError> {
