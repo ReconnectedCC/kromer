@@ -48,12 +48,10 @@ pub struct TransactionJson {
     pub id: Option<Thing>,
 
     /// The sender of this transaction.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<String>,
+    pub from: String,
 
     /// The recipient of this transaction. This may be `name` if the transaction was a name purchase, or `a` if it was a name's data change.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<String>,
+    pub to: String,
 
     /// The amount of Krist transferred in this transaction. Can be 0, notably if the transaction was a name's data change.
     pub value: Decimal,
@@ -92,8 +90,8 @@ impl From<transaction::Model> for TransactionJson {
 
         Self {
             id: transaction.id, // We dont do incremental IDs, do we give a shit?
-            from: Some(transaction.from),
-            to: Some(transaction.to),
+            from: transaction.from,
+            to: transaction.to,
             value: transaction.amount,
             time: transaction.timestamp.to_raw(),
             name: None, // TODO: Populate this later, maybe with a separate function.
