@@ -45,7 +45,7 @@ pub async fn process_text_msg(
             routes::addresses::get_address(db, address, fetch_names, msg_id).await
         }
         WebSocketMessageInner::Login { private_key } => {
-            routes::auth::perform_login(db, msg_id, private_key).await
+            routes::auth::perform_login(db, server, uuid, private_key, msg_id).await
         }
         WebSocketMessageInner::Logout => routes::auth::perform_logout(server, uuid, msg_id).await,
         WebSocketMessageInner::Me => routes::me::get_myself(db, server, uuid, msg_id).await,

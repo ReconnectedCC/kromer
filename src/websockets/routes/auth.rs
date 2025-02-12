@@ -11,10 +11,12 @@ use crate::websockets::WebSocketServer;
 
 pub async fn perform_login(
     db: &Surreal<Any>,
-    msg_id: Option<usize>,
+    server: &WebSocketServer,
+    uuid: &Uuid,
     private_key: String,
+    msg_id: Option<usize>,
 ) -> WebSocketMessage {
-    let wallet = Wallet::verify_address(db, private_key)
+    let wallet = Wallet::verify_address(db, private_key.clone())
         .await
         .map_err(|_| KromerError::Wallet(WalletError::InvalidPassword));
 
@@ -23,6 +25,14 @@ pub async fn perform_login(
         Ok(response) => {
             if response.authed {
                 let wallet = response.address;
+
+                let inner = server.inner.lock().await;
+                let mut session = inner
+                    .sessions
+                    .get_mut(uuid)
+                    .expect("Expected the session to exist, why doesn't it?");
+                session.address = wallet.address.clone();
+                session.private_key = Some(private_key);
 
                 WebSocketMessage {
                     ok: Some(true),
