@@ -152,12 +152,13 @@ impl WebSocketServer {
     pub async fn broadcast_event(&self, event: WebSocketMessage) {
         let msg =
             serde_json::to_string(&event).expect("Failed to turn event message into a string");
+        tracing::debug!("Broadcasting event: {msg}");
 
         let inner = self.inner.lock().await;
-        let session = inner.sessions.iter_mut();
+        let sessions = inner.sessions.iter_mut();
 
-        for mut session in session {
-            let client_data = session.value_mut();
+        for mut session in sessions {
+            let (uuid, client_data) = session.pair_mut();
 
             if let WebSocketMessageInner::Event { ref event } = event.r#type {
                 match event {
@@ -173,6 +174,8 @@ impl WebSocketServer {
                             let result = client_data.session.text(msg.clone()).await;
                             if result.is_err() {
                                 tracing::warn!("Got an unexpected closed session");
+
+                                self.cleanup_session(uuid).await;
                             }
                         }
                     }
@@ -186,6 +189,8 @@ impl WebSocketServer {
                             let result = client_data.session.text(msg.clone()).await;
                             if result.is_err() {
                                 tracing::warn!("Got an unexpected closed session");
+
+                                self.cleanup_session(uuid).await;
                             }
                         }
                     }
@@ -206,15 +211,16 @@ impl WebSocketServer {
             tracing::info!("Sending msg: {msg}");
 
             futures.push(async move {
-                let data = entry.value_mut();
-                data.session.text(msg).await
+                let (uuid, data) = entry.pair_mut();
+                let res = data.session.text(msg).await;
+                if res.is_err() {
+                    tracing::warn!("Got an unexpected closed session");
+
+                    self.cleanup_session(uuid).await;
+                }
             });
         }
 
-        while let Some(result) = futures.next().await {
-            if result.is_err() {
-                tracing::warn!("Got an unexpected closed session");
-            }
-        }
+        while let Some(_result) = futures.next().await {}
     }
 }
