@@ -22,7 +22,6 @@ fn gen_my_openapi() -> String {
     struct ApiDoc;
 
     let _ = ApiDoc::openapi().to_pretty_json().unwrap();
-        
-    TransactionsApiDoc::openapi().to_pretty_json().unwrap()
 
+    TransactionsApiDoc::openapi().to_pretty_json().unwrap()
 }

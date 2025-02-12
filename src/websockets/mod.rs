@@ -4,13 +4,13 @@ pub mod routes;
 pub mod types;
 pub mod utils;
 
-use std::{sync::Arc, time::Duration};
 use actix_web::rt::time;
 use actix_ws::Session;
 use bytestring::ByteString;
 use dashmap::{DashMap, DashSet};
 use errors::WebSocketServerError;
 use futures_util::{stream::FuturesUnordered, StreamExt};
+use std::{sync::Arc, time::Duration};
 use surrealdb::Uuid;
 use tokio::sync::Mutex;
 
@@ -33,6 +33,12 @@ pub struct WebSocketServer {
 pub struct WebSocketServerInner {
     sessions: DashMap<Uuid, WebSocketSessionData>,
     pending_tokens: DashMap<Uuid, WebSocketTokenData>,
+}
+
+impl Default for WebSocketServer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl WebSocketServer {
@@ -156,18 +162,21 @@ impl WebSocketServer {
                     WebSocketEvent::Transaction { transaction } => {
                         let mut subs = client_data.subscriptions.iter();
                         if (!client_data.is_guest()
-                            && (client_data.address == transaction.to || client_data.address == transaction.from)
+                            && (client_data.address == transaction.to
+                                || client_data.address == transaction.from)
                             && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnTransactions)))
-                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Transactions)) {
+                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Transactions))
+                        {
                             self.broadcast(msg.clone()).await;
                         }
-                    },
+                    }
                     WebSocketEvent::Name { name } => {
                         let mut subs = client_data.subscriptions.iter();
-                        if  !client_data.is_guest()
+                        if !client_data.is_guest()
                             && (client_data.address == name.owner)
                             && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnNames))
-                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Names)) {
+                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Names))
+                        {
                             self.broadcast(msg.clone()).await;
                         }
                     }

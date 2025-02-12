@@ -62,7 +62,7 @@ impl From<name::Model> for NameJson {
     fn from(name: name::Model) -> Self {
         Self {
             name: name.name,
-            owner: name.owner,             // TODO: Use correct values
+            owner: name.owner,                   // TODO: Use correct values
             original_owner: name.original_owner, // TODO: Populate this.
             registered: name.registered.to_rfc3339(),
             updated: None,

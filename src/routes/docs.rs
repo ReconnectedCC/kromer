@@ -17,5 +17,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         Files::new("", &static_path)
             .index_file("index.html")
             .prefer_utf8(true),
-    ).route("/docs/{tail:.*}", web::get().to(serve_index));
+    )
+    .route("/docs/{tail:.*}", web::get().to(serve_index));
 }
