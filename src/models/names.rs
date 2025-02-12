@@ -50,9 +50,9 @@ pub struct NameDataUpdateBody {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct NameJson {
     pub name: String,
-    pub owner: Option<String>,
+    pub owner: String,
     pub original_owner: Option<String>,
-    pub registered: Option<String>,
+    pub registered: String,
     pub updated: Option<String>,
     pub transfered: Option<String>,
     pub unpaid: i64,
@@ -62,9 +62,9 @@ impl From<name::Model> for NameJson {
     fn from(name: name::Model) -> Self {
         Self {
             name: name.name,
-            owner: Some(name.owner),             // TODO: Use correct values
+            owner: name.owner,             // TODO: Use correct values
             original_owner: name.original_owner, // TODO: Populate this.
-            registered: Some(name.registered.to_rfc3339()),
+            registered: name.registered.to_rfc3339(),
             updated: None,
             transfered: None, // TODO: Populate this
             unpaid: 0,
