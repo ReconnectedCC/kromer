@@ -5,7 +5,6 @@ pub mod types;
 pub mod utils;
 
 use std::{sync::Arc, time::Duration};
-
 use actix_web::rt::time;
 use actix_ws::Session;
 use bytestring::ByteString;
@@ -17,7 +16,7 @@ use tokio::sync::Mutex;
 
 use types::common::{WebSocketSessionData, WebSocketSubscriptionType, WebSocketTokenData};
 
-use crate::models::websockets::WebSocketMessage;
+use crate::models::websockets::{WebSocketEvent, WebSocketMessage, WebSocketMessageInner};
 
 // use crate::models::websockets::WebSocketEventMessage;
 
@@ -148,8 +147,33 @@ impl WebSocketServer {
         let msg =
             serde_json::to_string(&event).expect("Failed to turn event message into a string");
 
-        // TODO: Subscription check
-        self.broadcast(msg).await;
+        let clients = self.inner.lock().await.sessions.clone();
+
+        for (_client_uuid, client_data) in clients {
+            if let WebSocketMessageInner::Event { ref event } = event.r#type {
+                match event {
+                    WebSocketEvent::Block { .. } => todo!(),
+                    WebSocketEvent::Transaction { transaction } => {
+                        let mut subs = client_data.subscriptions.iter();
+                        if (!client_data.is_guest()
+                            && (client_data.address == transaction.to || client_data.address == transaction.from)
+                            && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnTransactions)))
+                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Transactions)) {
+                            self.broadcast(msg.clone()).await;
+                        }
+                    },
+                    WebSocketEvent::Name { name } => {
+                        let mut subs = client_data.subscriptions.iter();
+                        if  !client_data.is_guest()
+                            && (client_data.address == name.owner)
+                            && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnNames))
+                            || subs.any(|t| t.eq(&WebSocketSubscriptionType::Names)) {
+                            self.broadcast(msg.clone()).await;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// Broadcast a message to all connected clients
