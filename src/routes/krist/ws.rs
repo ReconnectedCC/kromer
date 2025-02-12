@@ -84,34 +84,39 @@ pub async fn gateway(
     let uuid_result = Uuid::from_str(&token)
         .map_err(|_| KristError::WebSocket(WebSocketError::InvalidWebsocketToken));
 
-    if let Err(err) = uuid_result {
-        let error = json!({
-            "ok": false,
-            "error": err.error_type(),
-            "message": err.to_string(),
-            "type": "error"
-        });
+    let uuid = match uuid_result {
+        Ok(uuid) => uuid,
+        Err(err) => {
+            let error = json!({
+                "ok": false,
+                "error": err.error_type(),
+                "message": err.to_string(),
+                "type": "error"
+            });
 
-        let _ = session.text(error.to_string()).await;
+            let _ = session.text(error.to_string()).await;
 
-        return Ok(response);
-    }
-    let uuid = uuid_result.unwrap(); // SAFETY: We handled the error above
+            return Ok(response);
+        }
+    };
 
     let data_result = server.use_token(&uuid).await;
-    if data_result.is_err() {
-        let error = json!({
-            "ok": false,
-            "error": "invalid_websocket_token",
-            "message": "Invalid websocket token",
-            "type": "error"
-        });
 
-        let _ = session.text(error.to_string()).await;
+    let data = match data_result {
+        Ok(data) => data,
+        Err(_err) => {
+            let error = json!({
+                "ok": false,
+                "error": "invalid_websocket_token",
+                "message": "Invalid websocket token",
+                "type": "error"
+            });
 
-        return Ok(response);
-    }
-    let data = data_result.unwrap(); // SAFETY: We handled the error above
+            let _ = session.text(error.to_string()).await;
+
+            return Ok(response);
+        }
+    };
 
     let mut stream = stream
         .max_frame_size(64 * 1024)
