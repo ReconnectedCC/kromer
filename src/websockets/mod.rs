@@ -154,10 +154,10 @@ impl WebSocketServer {
             serde_json::to_string(&event).expect("Failed to turn event message into a string");
 
         let inner = self.inner.lock().await;
-        let session = inner.sessions.iter();
+        let session = inner.sessions.iter_mut();
 
-        for session in session {
-            let client_data = session.value();
+        for mut session in session {
+            let client_data = session.value_mut();
 
             if let WebSocketMessageInner::Event { ref event } = event.r#type {
                 match event {
@@ -170,7 +170,10 @@ impl WebSocketServer {
                             && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnTransactions)))
                             || subs.any(|t| t.eq(&WebSocketSubscriptionType::Transactions))
                         {
-                            self.broadcast(msg.clone()).await;
+                            let result = client_data.session.text(msg.clone()).await;
+                            if result.is_err() {
+                                tracing::warn!("Got an unexpected closed session");
+                            }
                         }
                     }
                     WebSocketEvent::Name { name } => {
@@ -180,7 +183,10 @@ impl WebSocketServer {
                             && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnNames))
                             || subs.any(|t| t.eq(&WebSocketSubscriptionType::Names))
                         {
-                            self.broadcast(msg.clone()).await;
+                            let result = client_data.session.text(msg.clone()).await;
+                            if result.is_err() {
+                                tracing::warn!("Got an unexpected closed session");
+                            }
                         }
                     }
                 }
