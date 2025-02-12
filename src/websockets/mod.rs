@@ -153,9 +153,12 @@ impl WebSocketServer {
         let msg =
             serde_json::to_string(&event).expect("Failed to turn event message into a string");
 
-        let clients = self.inner.lock().await.sessions.clone();
+        let inner = self.inner.lock().await;
+        let session = inner.sessions.iter();
 
-        for (_client_uuid, client_data) in clients {
+        for session in session {
+            let client_data = session.value();
+
             if let WebSocketMessageInner::Event { ref event } = event.r#type {
                 match event {
                     WebSocketEvent::Block { .. } => todo!(),
