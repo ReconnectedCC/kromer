@@ -1,0 +1,1 @@
+UPSERT wallet SET address="name", balance=0, created_at=time::now(), hash="some-hash-value",is_shared=false, total_in=0, total_out=0, locked=false WHERE address = "name";
