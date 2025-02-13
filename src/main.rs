@@ -50,6 +50,8 @@ async fn main() -> Result<(), KromerError> {
 
     let db_arc = Arc::new(db);
 
+    Database::monitor_db_connection(db_arc.clone());
+
     let krist_ws_server = WebSocketServer::new();
 
     let state = web::Data::new(AppState { db: db_arc });
