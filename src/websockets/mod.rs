@@ -26,13 +26,13 @@ pub const TOKEN_EXPIRATION: Duration = Duration::from_secs(30);
 
 #[derive(Clone)]
 pub struct WebSocketServer {
-    inner: Arc<Mutex<WebSocketServerInner>>,
+    pub inner: Arc<Mutex<WebSocketServerInner>>,
 }
 
 #[derive(Clone)]
 pub struct WebSocketServerInner {
-    sessions: DashMap<Uuid, WebSocketSessionData>,
-    pending_tokens: DashMap<Uuid, WebSocketTokenData>,
+    pub sessions: DashMap<Uuid, WebSocketSessionData>,
+    pub pending_tokens: DashMap<Uuid, WebSocketTokenData>,
 }
 
 impl Default for WebSocketServer {
