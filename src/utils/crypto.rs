@@ -72,5 +72,15 @@ mod tests {
     #[test]
     fn test_known_values() {
         assert_eq!(make_v2_address("test123", "k"), "krcgbmalxg");
+        assert_eq!(make_v2_address("0", "k"), "kzbdy8rmok");
+        assert_eq!(make_v2_address("1", "k"), "k4om3ewezk");
+        assert_eq!(make_v2_address("2", "k"), "kd18lv0b6u");
+        assert_eq!(make_v2_address("3", "k"), "krdfu99fep");
+        assert_eq!(make_v2_address("4", "k"), "k8kl0fyol5");
+        assert_eq!(make_v2_address("5", "k"), "kl996ygs97");
+        assert_eq!(make_v2_address("6", "k"), "k926k4tgmh");
+        assert_eq!(make_v2_address("7", "k"), "k6o8rgjqi2");
+        assert_eq!(make_v2_address("8", "k"), "knvvk3kahp");
+        assert_eq!(make_v2_address("9", "k"), "kv2k3ja3o9");
     }
 }
