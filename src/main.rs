@@ -78,7 +78,7 @@ async fn main() -> Result<(), KromerError> {
             .app_data(web::Data::new(krist_ws_server.clone()))
             .wrap(middleware::Logger::default())
             .wrap(middleware::NormalizePath::trim())
-            .configure(kromer::routes::config)
+            .configure(routes::config)
             .default_service(web::route().to(routes::not_found::not_found))
     })
     .bind(&server_url)?
