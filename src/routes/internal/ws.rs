@@ -1,7 +1,7 @@
 use actix_web::{get, web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use surrealdb::Uuid;
+
 use crate::errors::KromerError;
 use crate::websockets::types::common::WebSocketSubscriptionType;
 use crate::websockets::WebSocketServer;
@@ -25,7 +25,10 @@ pub struct SessionDataResponse<'a> {
 }
 
 #[get("/session")]
-async fn get_session(server: web::Data<WebSocketServer>, params: web::Query<SessionQuery>) -> Result<HttpResponse, KromerError> {
+async fn get_session(
+    server: web::Data<WebSocketServer>,
+    params: web::Query<SessionQuery>,
+) -> Result<HttpResponse, KromerError> {
     let sessions = &server.inner.lock().await.sessions;
 
     let target_uuid = match params.session.parse::<Uuid>() {
@@ -46,7 +49,8 @@ async fn get_session(server: web::Data<WebSocketServer>, params: web::Query<Sess
 
     let session_data = session_ref.value();
 
-    let vec: Vec<WebSocketSubscriptionType> = session_data.subscriptions
+    let vec: Vec<WebSocketSubscriptionType> = session_data
+        .subscriptions
         .iter()
         .map(|entry| entry.key().clone())
         .collect();
@@ -66,16 +70,15 @@ async fn get_sessions(server: web::Data<WebSocketServer>) -> Result<HttpResponse
 
     let vec: Vec<BasicSessionDataResponse> = sessions
         .iter()
-        .map(|entry| BasicSessionDataResponse { uuid: entry.key().clone(), address: entry.address.clone() })
+        .map(|entry| BasicSessionDataResponse {
+            uuid: *entry.key(),
+            address: entry.address.clone(),
+        })
         .collect();
 
     Ok(HttpResponse::Ok().json(vec))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/ws")
-            .service(get_session)
-            .service(get_sessions)
-    );
+    cfg.service(web::scope("/ws").service(get_session).service(get_sessions));
 }

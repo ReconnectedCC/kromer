@@ -1,3 +1,4 @@
+use crate::errors::KromerError;
 use std::sync::Arc;
 use std::time::Duration;
 use surrealdb::{
@@ -7,7 +8,6 @@ use surrealdb::{
 };
 use tokio::spawn;
 use tokio::time::{sleep, timeout};
-use crate::errors::KromerError;
 
 pub struct Database;
 
