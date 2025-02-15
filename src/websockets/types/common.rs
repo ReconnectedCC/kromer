@@ -7,10 +7,11 @@ pub struct WebSocketTokenData {
     pub private_key: Option<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct WebSocketSessionData {
     pub address: String,
     pub private_key: Option<String>,
+    #[serde(skip)]
     pub session: actix_ws::Session,
     pub subscriptions: DashSet<WebSocketSubscriptionType>,
 }

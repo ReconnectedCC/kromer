@@ -1,4 +1,5 @@
 use actix_web::{get, web, HttpResponse};
+use dashmap::DashSet;
 use serde::{Deserialize, Serialize};
 use surrealdb::Uuid;
 
@@ -9,12 +10,6 @@ use crate::websockets::WebSocketServer;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionQuery {
     pub session: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct BasicSessionDataResponse {
-    pub uuid: Uuid,
-    pub address: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -48,35 +43,15 @@ async fn get_session(
     };
 
     let session_data = session_ref.value();
-
-    let vec: Vec<WebSocketSubscriptionType> = session_data
-        .subscriptions
-        .iter()
-        .map(|entry| entry.key().clone())
-        .collect();
-
-    let resp = SessionDataResponse {
-        address: &session_data.address,
-        private_key: &session_data.private_key,
-        subscriptions: vec,
-    };
-
-    Ok(HttpResponse::Ok().json(resp))
+    
+    Ok(HttpResponse::Ok().json(session_data))
 }
 
 #[get("/sessions")]
 async fn get_sessions(server: web::Data<WebSocketServer>) -> Result<HttpResponse, KromerError> {
     let sessions = &server.inner.lock().await.sessions;
 
-    let vec: Vec<BasicSessionDataResponse> = sessions
-        .iter()
-        .map(|entry| BasicSessionDataResponse {
-            uuid: *entry.key(),
-            address: entry.address.clone(),
-        })
-        .collect();
-
-    Ok(HttpResponse::Ok().json(vec))
+    Ok(HttpResponse::Ok().json(sessions))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
