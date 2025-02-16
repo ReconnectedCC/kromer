@@ -6,7 +6,7 @@ use toml;
 pub struct DetailedMotdResponse {
     pub ok: bool,
     #[serde(flatten)]
-    pub motd: DetailedMotd, 
+    pub motd: DetailedMotd,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]

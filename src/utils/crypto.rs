@@ -40,8 +40,8 @@ pub fn make_v2_address(key: &str, address_prefix: &str) -> String {
     let mut chain = String::from(address_prefix);
     let mut hash = double_sha256(key);
 
-    for i in 0..9 {
-        protein[i] = u8::from_str_radix(&hash[0..2], 16).unwrap();
+    for amino in &mut protein {
+        *amino = u8::from_str_radix(&hash[0..2], 16).unwrap();
         hash = double_sha256(&hash);
     }
 

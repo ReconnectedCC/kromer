@@ -2,7 +2,9 @@ use actix_web::{get, post, web, HttpResponse};
 
 use crate::database::models::wallet::Model as Wallet;
 use crate::models::misc::{MoneySupplyResponse, PrivateKeyAddressResponse, WalletVersionResponse};
-use crate::models::motd::{Constants, CurrencyInfo, DetailedMotd, DetailedMotdResponse, PackageInfo};
+use crate::models::motd::{
+    Constants, CurrencyInfo, DetailedMotd, DetailedMotdResponse, PackageInfo,
+};
 use crate::{
     errors::krist::KristError,
     models::auth::{AddressAuthenticationResponse, LoginDetails},
@@ -68,10 +70,7 @@ async fn get_motd() -> HttpResponse {
         notice: "Some awesome notice will go here".to_string(),
     };
 
-    let motd = DetailedMotdResponse {
-        ok: true,
-        motd: motd
-    };
+    let motd = DetailedMotdResponse { ok: true, motd };
 
     HttpResponse::Ok().json(motd)
 }
