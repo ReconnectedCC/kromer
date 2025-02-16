@@ -1,22 +1,13 @@
 use actix_web::{get, web, HttpResponse};
-use dashmap::DashSet;
 use serde::{Deserialize, Serialize};
 use surrealdb::Uuid;
 
 use crate::errors::KromerError;
-use crate::websockets::types::common::WebSocketSubscriptionType;
 use crate::websockets::WebSocketServer;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionQuery {
     pub session: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SessionDataResponse<'a> {
-    pub address: &'a str,
-    pub private_key: &'a Option<String>,
-    pub subscriptions: Vec<WebSocketSubscriptionType>,
 }
 
 #[get("/session")]
@@ -43,7 +34,7 @@ async fn get_session(
     };
 
     let session_data = session_ref.value();
-    
+
     Ok(HttpResponse::Ok().json(session_data))
 }
 
