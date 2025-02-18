@@ -77,7 +77,14 @@ pub async fn unsubscribe(
         return message;
     }
 
-    todo!()
+    WebSocketMessage {
+        ok: Some(false),
+        id: msg_id,
+        r#type: WebSocketMessageInner::Error {
+            error: "invalid_parameter".to_owned(),
+            message: "Invalid parameter event".to_owned(),
+        },
+    }
 }
 
 pub async fn get_subscription_level(
