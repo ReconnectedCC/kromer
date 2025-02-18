@@ -127,6 +127,7 @@ pub async fn gateway(
 
     let alive = Arc::new(Mutex::new(Instant::now()));
     let mut session2 = session.clone();
+    let server2 = server.clone();
     let alive2 = alive.clone();
 
     handler::send_hello_message(&mut session).await;
@@ -155,7 +156,10 @@ pub async fn gateway(
             let _ = session2.text(return_message).await;
 
             if Instant::now().duration_since(*alive2.lock().await) > CLIENT_TIMEOUT {
+                tracing::info!("Session {uuid} timed out");
                 let _ = session2.close(None).await;
+                server2.cleanup_session(&uuid).await;
+
                 break;
             }
         }
