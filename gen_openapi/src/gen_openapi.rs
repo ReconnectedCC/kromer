@@ -7,7 +7,9 @@ use kromer::routes::krist::TransactionsApiDoc;
 
 fn main() {
     let doc = gen_my_openapi();
-    let _ = fs::write("./target/open_api.json", doc);
+    let path = "./docs/open_api.yaml";
+    let _ = fs::File::create(path);
+    let _ = fs::write(path, doc);
 }
 
 fn gen_my_openapi() -> String {
@@ -23,5 +25,5 @@ fn gen_my_openapi() -> String {
 
     let _ = ApiDoc::openapi().to_pretty_json().unwrap();
 
-    TransactionsApiDoc::openapi().to_pretty_json().unwrap()
+    TransactionsApiDoc::openapi().to_yaml().unwrap()
 }

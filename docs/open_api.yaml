@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: kromer
+  description: ''
+  contact:
+    name: '@bananasov'
+  license:
+    name: GPL-3.0
+    identifier: GPL-3.0
+  version: 0.2.1
+paths:
+  /transactions:
+    get:
+      tags:
+      - Transactions
+      operationId: List transactions
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type:
+          - integer
+          - 'null'
+          format: int64
+          minimum: 0
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type:
+          - integer
+          - 'null'
+          format: int64
+          minimum: 0
+      responses:
+        '200':
+          description: Transactions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+        '404':
+          description: Transactions were not found
+components:
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      examples:
+      - name: An example transaction
+    TransactionListResponse:
+      type: object
+      required:
+      - ok
+      - count
+      - total
+      - transactions
+      properties:
+        count:
+          type: integer
+          description: The count of results.
+          minimum: 0
+        ok:
+          type: boolean
+        total:
+          type: integer
+          description: The total amount of transactions
+          minimum: 0
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'

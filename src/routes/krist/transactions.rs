@@ -15,8 +15,16 @@ use crate::websockets::WebSocketServer;
 use crate::{routes::PaginationParams, AppState};
 
 #[utoipa::path(
+    get,
+    tags = ["Transactions"],
+    path = "/transactions",
+    operation_id = "List transactions",
     responses(
-        (status=200, description="Transaction: {}", body = str)
+        (status=200, description="Transactions fetched successfully", body = TransactionListResponse),
+        (status=404, description = "Transactions were not found")
+    ),
+    params(
+        PaginationParams
     )
 )]
 #[get("")]

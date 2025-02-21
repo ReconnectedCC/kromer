@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import starlightOpenAPI, { openAPISidebarGroups } from "starlight-openapi";
 
 // https://astro.build/config
 export default defineConfig({
@@ -9,8 +10,18 @@ export default defineConfig({
         starlight({
             title: "Kromer Docs",
             social: {
-                github: "https://github.com/withastro/starlight",
+                github: "https://github.com/ReconnectedCC/kromer",
             },
+            plugins: [
+                // Generate the OpenAPI documentation pages.
+                starlightOpenAPI([
+                    {
+                        base: "api/kromer",
+                        label: "Kromer",
+                        schema: "./open_api.yaml",
+                    },
+                ]),
+            ],
             sidebar: [
                 {
                     label: "Guides",
@@ -23,6 +34,7 @@ export default defineConfig({
                     label: "Reference",
                     autogenerate: { directory: "reference" },
                 },
+                ...openAPISidebarGroups,
             ],
         }),
     ],

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToResponse;
 
 use crate::database::models::name;
 
@@ -47,7 +48,7 @@ pub struct NameDataUpdateBody {
     pub private_key: String,
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, ToResponse)]
 pub struct NameJson {
     pub name: String,
     pub owner: String,

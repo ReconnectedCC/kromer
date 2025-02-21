@@ -1,11 +1,12 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
+use utoipa::{openapi::{RefOr, Response, ResponseBuilder}, ToResponse, ToSchema};
 
 use crate::database::models::transaction;
 use transaction::TransactionNameData;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, ToResponse, ToSchema)]
 pub struct TransactionListResponse {
     pub ok: bool,
 
@@ -70,6 +71,36 @@ pub struct TransactionJson {
     pub sent_name: Option<String>,
     #[serde(rename = "type")]
     pub transaction_type: TransactionType,
+}
+
+impl<'__r> ToResponse<'__r> for TransactionJson {
+    fn response() -> (&'__r str, RefOr<Response>) {
+        (
+            "TransactionResponse",
+            ResponseBuilder::new().description("Transaction Response").build().into(),
+        )
+    }
+}
+
+impl utoipa::ToSchema for TransactionJson {
+    fn name() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Transaction")
+    }
+}
+
+impl utoipa::PartialSchema for TransactionJson {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .property(
+                "name",
+                utoipa::openapi::ObjectBuilder::new()
+                    .schema_type(utoipa::openapi::schema::Type::String)
+            )
+            .property("id",
+                utoipa::openapi::ObjectBuilder::new()
+                    .schema_type(utoipa::openapi::schema::Type::String)
+            ).examples(Some(serde_json::json!({"name": "An example transaction"}))).into()
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
