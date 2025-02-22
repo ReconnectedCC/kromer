@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 kromer = { path = ".."}
-serde = "1.0.217"
+serde = "1.0.218"
 utoipa = "5.3.1"
 
 [[bin]]
