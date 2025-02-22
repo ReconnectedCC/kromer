@@ -8,14 +8,14 @@ use surrealdb::{
 use rust_decimal::Decimal;
 
 use super::{name, transaction};
-use super::{serialize_table_opt, CountResponse};
+use super::{serialize_record_opt, CountResponse};
 use crate::{models::transactions::AddressTransactionQuery, routes::PaginationParams, utils};
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Model {
     #[serde(
         skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_table_opt"
+        serialize_with = "serialize_record_opt"
     )]
     pub id: Option<Thing>,
     pub address: String,
