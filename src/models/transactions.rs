@@ -1,8 +1,12 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
-use utoipa::{openapi::{RefOr, Response, ResponseBuilder}, ToResponse, ToSchema};
+use utoipa::{
+    openapi::{RefOr, Response, ResponseBuilder},
+    ToResponse, ToSchema,
+};
 
+use crate::database::models::serialize_record_id_opt;
 use crate::database::models::transaction;
 use transaction::TransactionNameData;
 
@@ -46,6 +50,7 @@ pub struct AddressTransactionQuery {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct TransactionJson {
     /// The ID of this transaction.
+    #[serde(serialize_with = "serialize_record_id_opt")]
     pub id: Option<Thing>,
 
     /// The sender of this transaction.
@@ -77,7 +82,10 @@ impl<'__r> ToResponse<'__r> for TransactionJson {
     fn response() -> (&'__r str, RefOr<Response>) {
         (
             "TransactionResponse",
-            ResponseBuilder::new().description("Transaction Response").build().into(),
+            ResponseBuilder::new()
+                .description("Transaction Response")
+                .build()
+                .into(),
         )
     }
 }
@@ -94,12 +102,15 @@ impl utoipa::PartialSchema for TransactionJson {
             .property(
                 "name",
                 utoipa::openapi::ObjectBuilder::new()
-                    .schema_type(utoipa::openapi::schema::Type::String)
+                    .schema_type(utoipa::openapi::schema::Type::String),
             )
-            .property("id",
+            .property(
+                "id",
                 utoipa::openapi::ObjectBuilder::new()
-                    .schema_type(utoipa::openapi::schema::Type::String)
-            ).examples(Some(serde_json::json!({"name": "An example transaction"}))).into()
+                    .schema_type(utoipa::openapi::schema::Type::String),
+            )
+            .examples(Some(serde_json::json!({"name": "An example transaction"})))
+            .into()
     }
 }
 
