@@ -1,8 +1,0 @@
-{
-  "luau-lsp.require.mode": "relativeToFile",
-  "luau-lsp.sourcemap.enabled": false,
-  "luau-lsp.require.directoryAliases": {
-    "@lune/": "~/.lune/.typedefs/0.8.6/"
-  },
-  "editor.tabSize": 4
-}
