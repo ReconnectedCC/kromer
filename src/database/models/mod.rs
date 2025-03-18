@@ -11,20 +11,45 @@ pub struct CountResponse {
     pub count: usize,
 }
 
-pub fn serialize_table<S>(x: &Thing, s: S) -> Result<S::Ok, S::Error>
+/// Serde serializer function that converts a record ID from a Thing to a raw string in the format `table:id`.
+pub fn serialize_record<S>(record: &Thing, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let raw = x.to_raw();
+    let raw = record.to_raw();
     s.serialize_str(&raw)
 }
 
-pub fn serialize_table_opt<S>(x: &Option<Thing>, s: S) -> Result<S::Ok, S::Error>
+/// Serde serializer function that converts a record ID from a Thing to a raw string in the format `table:id`.
+pub fn serialize_record_opt<S>(record: &Option<Thing>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    match x {
+    match record {
         Some(thing) => s.serialize_str(&thing.to_raw()),
+        None => s.serialize_none(),
+    }
+}
+
+/// Serde serializer function that converts a record ID from a Thing to a raw string in the format `id`.
+pub fn serialize_record_id<S>(record: &Thing, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let id = record.id.to_raw();
+    s.serialize_str(&id)
+}
+
+/// Serde serializer function that converts a record ID from a Thing to a raw string in the format `id`.
+pub fn serialize_record_id_opt<S>(record: &Option<Thing>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match record {
+        Some(record) => {
+            let id = record.id.to_raw();
+            s.serialize_str(&id)
+        }
         None => s.serialize_none(),
     }
 }

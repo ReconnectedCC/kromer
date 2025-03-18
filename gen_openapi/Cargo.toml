@@ -1,0 +1,13 @@
+[package]
+name = "gen_openapi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kromer = { path = ".."}
+serde = "1.0.218"
+utoipa = "5.3.1"
+
+[[bin]]
+name="gen_openapi"
+path = "src/gen_openapi.rs"

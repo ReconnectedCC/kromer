@@ -4,14 +4,14 @@ use surrealdb::{
     Surreal,
 };
 
-use super::serialize_table_opt;
+use super::serialize_record_opt;
 use crate::routes::PaginationParams;
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Model {
     #[serde(
         skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_table_opt"
+        serialize_with = "serialize_record_opt"
     )]
     pub id: Option<Thing>,
     pub name: String,

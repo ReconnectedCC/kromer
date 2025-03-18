@@ -9,7 +9,7 @@ pub mod krist;
 pub mod not_found;
 pub mod v1;
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, utoipa::IntoParams)]
 pub struct PaginationParams {
     pub limit: Option<u64>,
     pub offset: Option<u64>,

@@ -1,23 +1,23 @@
 use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Instant;
 
-use actix::spawn;
-//use actix::prelude::*;
-use actix_web::{get, post, HttpRequest, Responder};
-use actix_web::{
-    web::{self, Data},
-    HttpResponse,
-};
+use actix_web::rt::time;
+use actix_web::{get, post, HttpRequest};
+use actix_web::{web, HttpResponse};
+use actix_ws::AggregatedMessage;
+use chrono::Utc;
 use serde_json::json;
 use surrealdb::Uuid;
-use tokio::time::sleep;
+use tokio::sync::Mutex;
 
 use crate::database::models::wallet::Model as Wallet;
+use crate::errors::krist::KristErrorExt;
 use crate::errors::krist::{address::AddressError, websockets::WebSocketError, KristError};
-use crate::websockets::handler::handle_ws;
+use crate::models::websockets::{WebSocketMessage, WebSocketMessageInner};
 use crate::websockets::types::common::WebSocketTokenData;
-use crate::websockets::utils;
-use crate::websockets::wrapped_ws::WrappedWsData;
-use crate::websockets::ws_server::WsServer;
+use crate::websockets::types::convert_to_iso_string;
+use crate::websockets::{handler, utils, WebSocketServer, CLIENT_TIMEOUT, HEARTBEAT_INTERVAL};
 use crate::AppState;
 
 #[derive(serde::Deserialize)]
@@ -26,55 +26,32 @@ struct WsConnDetails {
 }
 
 #[post("/start")]
+#[tracing::instrument(name = "setup_ws_route", level = "debug", skip_all)]
 pub async fn setup_ws(
-    _req: HttpRequest,
-    state: Data<AppState>,
+    state: web::Data<AppState>,
+    server: web::Data<WebSocketServer>,
     details: Option<web::Json<WsConnDetails>>,
-    _stream: web::Payload,
 ) -> Result<HttpResponse, KristError> {
-    let tracing_span = tracing::span!(tracing::Level::DEBUG, "setup_ws_route");
-    let _tracing_enter = tracing_span.enter();
-
     let db = &state.db;
-    let token_cache_mutex = state.token_cache.clone();
+    let private_key = details.map(|json_details| json_details.privatekey.clone());
 
-    let ws_privatekey = details.map(|json_details| json_details.privatekey.clone());
-    let mut address = "guest".to_string();
-    let ws_privatekey2 = ws_privatekey.clone();
+    let uuid = match private_key {
+        Some(private_key) => {
+            let wallet = Wallet::verify_address(db, &private_key)
+                .await
+                .map_err(|_| KristError::Address(AddressError::AuthFailed))?;
+            let model = wallet.address;
 
-    if let Some(check_key) = ws_privatekey {
-        // This should error back in the request if the wallet key is invalid.
-        let wallet = Wallet::verify(db, check_key)
-            .await
-            .map_err(KristError::Database)?
-            .ok_or_else(|| KristError::Address(AddressError::AuthFailed))?;
+            let token_data = WebSocketTokenData::new(model.address, Some(private_key));
 
-        address = wallet.address;
-    }
-
-    let uuid = Uuid::new_v4();
-    let token_params = WebSocketTokenData {
-        address,
-        privatekey: ws_privatekey2,
-    };
-
-    let mut token_cache = token_cache_mutex.lock().await;
-    token_cache.add_token(uuid, token_params);
-
-    // Spawn a green thread that will handle token cleanup.
-    let token_cache2 = token_cache_mutex.clone();
-    let uuid2 = uuid;
-    tokio::spawn(async move {
-        let tracing_span = tracing::span!(tracing::Level::DEBUG, "spawned_token_cleanup");
-        let _tracing_enter = tracing_span.enter();
-        sleep(std::time::Duration::from_secs(30)).await;
-        let mut token_cache = token_cache2.lock().await;
-
-        if token_cache.check_token(uuid) {
-            tracing::info!("Token expired (30 secs)");
-            token_cache.remove_token(uuid2);
+            server.obtain_token(token_data).await
         }
-    });
+        None => {
+            let token_data = WebSocketTokenData::new("guest".into(), None);
+
+            server.obtain_token(token_data).await
+        }
+    };
 
     // Make the URL and return it to the user.
     let url = match utils::make_url::make_url(uuid) {
@@ -90,89 +67,165 @@ pub async fn setup_ws(
 }
 
 #[get("/gateway/{token}")]
-//#[allow(clippy::await_holding_lock)]
+#[tracing::instrument(name = "ws_gateway_route", level = "info", fields(token = *token), skip_all,)]
 pub async fn gateway(
     req: HttpRequest,
     body: web::Payload,
-    state: Data<AppState>,
+    state: web::Data<AppState>,
+    server: web::Data<WebSocketServer>,
     token: web::Path<String>,
-) -> Result<impl Responder, KristError> {
-    let debug_span = tracing::span!(tracing::Level::INFO, "ws_gateway_route");
-    let _tracing_debug_enter = debug_span.enter();
+) -> Result<HttpResponse, actix_web::Error> {
+    let server = server.into_inner(); // lol
+    let token = token.into_inner();
+    tracing::info!("Request with token string: {token}");
 
-    let token_as_string = token.into_inner();
-    tracing::info!("Request with token string: {token_as_string}");
+    let (response, mut session, stream) = actix_ws::handle(&req, body)?;
 
-    let uuid_result = Uuid::from_str(&token_as_string)
+    let uuid_result = Uuid::from_str(&token)
         .map_err(|_| KristError::WebSocket(WebSocketError::InvalidWebsocketToken));
 
-    // This is a one off message, and we don't want to actually open the server handling
-    if uuid_result.is_err() {
-        tracing::info!("Token {token_as_string} was not convertible into UUID");
-        return send_error_message(req.clone(), body).await;
-    }
+    let uuid = match uuid_result {
+        Ok(uuid) => uuid,
+        Err(err) => {
+            let error = json!({
+                "ok": false,
+                "error": err.error_type(),
+                "message": err.to_string(),
+                "type": "error"
+            });
 
-    // Unwrap should be fine, we checked already if there was an error
-    let uuid = uuid_result.unwrap_or_default();
+            let _ = session.text(error.to_string()).await;
 
-    // Check token, send a one off message if it's not okay, and don't open WS server handling
-    let token_cache_mutex = state.token_cache.clone();
-    let mut token_cache = token_cache_mutex.lock().await;
-    if !token_cache.check_token(uuid) {
-        drop(token_cache);
-        tracing::info!("Token {uuid} was not found in cache");
-        return send_error_message(req.clone(), body).await;
-    }
+            return Ok(response);
+        }
+    };
 
-    // Token was valid, now we can remove it from the cache
-    tracing::info!("Token {uuid} was valid");
-    let token_params = token_cache
-        .remove_token(uuid)
-        .ok_or_else(|| KristError::WebSocket(WebSocketError::InvalidWebsocketToken))?;
-    drop(token_cache);
+    let data_result = server.use_token(&uuid).await;
 
-    // TODO: New implementation a few lines down, spawn it per thread (green threaded)
-    //let ws_server_handle = state.ws_server_handle.clone();
+    let data = match data_result {
+        Ok(data) => data,
+        Err(_err) => {
+            let error = json!({
+                "ok": false,
+                "error": "invalid_websocket_token",
+                "message": "Invalid websocket token",
+                "type": "error"
+            });
 
-    // Create the actual handler for the WebSocketSession
-    let (response, session, msg_stream) = actix_ws::handle(&req, body)
-        .map_err(|_| KristError::WebSocket(WebSocketError::HandshakeError))?;
+            let _ = session.text(error.to_string()).await;
 
-    // Add this data to a struct for easy access to the session information
-    let wrapped_ws_data = WrappedWsData::new(uuid, token_params.address, token_params.privatekey);
+            return Ok(response);
+        }
+    };
 
-    // TODO: Verify this spawns a green thread to handle the WS Server
-    let (ws_server, ws_server_handle) = WsServer::new();
+    let mut stream = stream
+        .max_frame_size(64 * 1024)
+        .aggregate_continuations()
+        .max_continuation_size(2 * 1024 * 1024);
 
-    let ws_server_task = spawn(ws_server.run());
+    server.insert_session(uuid, session.clone(), data).await; // Not a big fan of cloning but here it is needed.
 
-    spawn(async move {
-        if let Err(err) = ws_server_task.await {
-            tracing::error!("WebSocket server error: {:?}", err);
+    let alive = Arc::new(Mutex::new(Instant::now()));
+    let mut session2 = session.clone();
+    let server2 = server.clone();
+    let alive2 = alive.clone();
+
+    handler::send_hello_message(&mut session).await;
+
+    // Heartbeat handling
+    actix_web::rt::spawn(async move {
+        let mut interval = time::interval(HEARTBEAT_INTERVAL);
+
+        loop {
+            interval.tick().await;
+            if session2.ping(b"").await.is_err() {
+                break;
+            }
+
+            let cur_time = convert_to_iso_string(Utc::now());
+            let message = WebSocketMessage {
+                ok: None,
+                id: None,
+                r#type: WebSocketMessageInner::Keepalive {
+                    server_time: cur_time,
+                },
+            };
+
+            let return_message =
+                serde_json::to_string(&message).unwrap_or_else(|_| "{}".to_string()); // ...what
+            let _ = session2.text(return_message).await;
+
+            if Instant::now().duration_since(*alive2.lock().await) > CLIENT_TIMEOUT {
+                tracing::info!("Session {uuid} timed out");
+                let _ = session2.close(None).await;
+                server2.cleanup_session(&uuid).await;
+
+                break;
+            }
         }
     });
 
-    spawn(handle_ws(
-        state.clone(),
-        wrapped_ws_data,
-        ws_server_handle,
-        session,
-        msg_stream,
-    ));
+    // Messgage handling code here
+    actix_web::rt::spawn(async move {
+        while let Some(Ok(msg)) = stream.recv().await {
+            match msg {
+                AggregatedMessage::Ping(bytes) => {
+                    if session.pong(&bytes).await.is_err() {
+                        tracing::error!("Failed to send pong back to session");
+                        return;
+                    }
+                }
 
-    Ok(response)
-}
+                AggregatedMessage::Text(string) => {
+                    if string.chars().count() > 512 {
+                        // TODO: Possibly use error message struct in models
+                        // This isn't super necessary though and this shortcut saves some unnecessary error handling...
+                        let error_msg = json!({
+                            "ok": "false",
+                            "error": "message_too_long",
+                            "message": "Message larger than 512 characters",
+                            "type": "error"
+                        })
+                        .to_string();
+                        tracing::info!("Message received was larger than 512 characters");
 
-async fn send_error_message(
-    req: HttpRequest,
-    body: web::Payload,
-) -> Result<HttpResponse, KristError> {
-    let (response, mut session, _msg_stream) =
-        actix_ws::handle(&req, body).map_err(|_| WebSocketError::HandshakeError)?;
+                        let _ = session.text(error_msg).await;
+                    } else {
+                        tracing::debug!("Message received: {string}");
 
-    let error_msg = json!({"ok": false, "error": "invalid_websocket_token", "message": "Invalid websocket token", "type": "error"});
+                        let process_result =
+                            handler::process_text_msg(&state.db, &server, &uuid, &string).await;
 
-    let _result = session.text(error_msg.to_string()).await;
+                        if let Ok(message) = process_result {
+                            let msg = serde_json::to_string(&message)
+                                .expect("Failed to serialize message into string");
+                            let _ = session.text(msg).await;
+                        } else {
+                            tracing::error!("Error in processing message")
+                        }
+                    }
+                }
+
+                AggregatedMessage::Close(reason) => {
+                    let _ = session.close(reason).await;
+
+                    tracing::info!("Got close, cleaning up");
+                    server.cleanup_session(&uuid).await;
+
+                    return;
+                }
+
+                AggregatedMessage::Pong(_) => {
+                    *alive.lock().await = Instant::now();
+                }
+
+                _ => (), // Binary data is just ignored
+            }
+        }
+
+        let _ = session.close(None).await;
+        server.cleanup_session(&uuid).await;
+    });
 
     Ok(response)
 }

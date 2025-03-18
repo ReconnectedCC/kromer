@@ -70,7 +70,7 @@ mod tests {
         let response = r#"{"ok":true,"address":{"address":"kre3w0i79j","balance":86945,"totalin":123364,"totalout":38292,"firstseen":"2015-03-13T12:55:18.000Z"}}"#;
         let response: ExpectedResponse =
             serde_json::from_str(response).expect("Failed to deserialize");
-        assert_eq!(response.ok, true);
+        assert!(response.ok);
     }
 
     #[test]

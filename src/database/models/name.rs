@@ -5,7 +5,7 @@ use surrealdb::{
     Surreal,
 };
 
-use super::{serialize_table_opt, CountResponse};
+use super::{serialize_record_opt, CountResponse};
 use crate::{
     database::models::wallet::Model as Wallet,
     errors::krist::{address::AddressError, generic::GenericError, name::NameError, KristError},
@@ -18,16 +18,13 @@ use crate::{
 pub struct Model {
     #[serde(
         skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_table_opt"
+        serialize_with = "serialize_record_opt"
     )]
     pub id: Option<Thing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_transfered: Option<Datetime>,
     pub name: String,
-    #[serde(
-        skip_serializing_if = "Option::is_none",
-        //serialize_with = "serialize_table_opt"
-    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub original_owner: Option<String>,
     pub owner: String,
     pub registered: Datetime,
