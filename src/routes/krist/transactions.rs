@@ -81,7 +81,7 @@ async fn transaction_create(
     }
 
     let creation_data = TransactionCreateData {
-        from: sender.address,
+        from: Some(sender.address),
         to: recipient.address,
         amount: details.amount,
         metadata: details.metadata,

@@ -22,7 +22,8 @@ pub struct Model {
     )]
     pub id: Option<Thing>,
     pub amount: Decimal,
-    pub from: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
     pub timestamp: Datetime,
@@ -32,7 +33,7 @@ pub struct Model {
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct TransactionCreateData {
-    pub from: String,
+    pub from: Option<String>,
     pub to: String,
     pub amount: Decimal,
     pub metadata: Option<String>,

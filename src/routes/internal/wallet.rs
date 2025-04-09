@@ -1,13 +1,14 @@
 use actix_web::{post, web, HttpResponse};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde_json::json;
 
 use crate::database::models::player::Model as Player;
+use crate::database::models::transaction::{Model as Transaction, TransactionCreateData};
 use crate::database::models::wallet::Model as Wallet;
 use crate::errors::transaction::TransactionError;
 use crate::errors::wallet::WalletError;
 use crate::models::addresses::AddressCreationResponse;
+use crate::models::transactions::TransactionType;
 use crate::utils::crypto::generate_random_password;
 use crate::{errors::KromerError, AppState};
 
@@ -92,11 +93,21 @@ async fn wallet_give_money(
         .bind(("amount", data.amount))
         .await?;
 
-    let resp = json!({
-        "ok": true
-    });
+	tracing::debug!("Made it here");
 
-    Ok(HttpResponse::Ok().json(resp))
+    let creation_data = TransactionCreateData {
+        from: None,
+        to: wallet.address,
+        amount: data.amount,
+        metadata: None, 
+        transaction_type: TransactionType::Mined,
+    };
+
+    let response: Vec<Transaction> = db.insert("transaction").content(creation_data).await?;
+
+    let response = response.first().unwrap(); // the fuck man
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {

@@ -165,9 +165,10 @@ impl WebSocketServer {
                     WebSocketEvent::Block { .. } => todo!(),
                     WebSocketEvent::Transaction { transaction } => {
                         let mut subs = client_data.subscriptions.iter();
+						let transaction_from = transaction.from.clone().unwrap_or("".to_string());
                         if (!client_data.is_guest()
                             && (client_data.address == transaction.to
-                                || client_data.address == transaction.from)
+                                || client_data.address == transaction_from)
                             && subs.any(|t| t.eq(&WebSocketSubscriptionType::OwnTransactions)))
                             || subs.any(|t| t.eq(&WebSocketSubscriptionType::Transactions))
                         {

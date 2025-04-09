@@ -54,7 +54,7 @@ pub struct TransactionJson {
     pub id: Option<Thing>,
 
     /// The sender of this transaction.
-    pub from: String,
+    pub from: Option<String>,
 
     /// The recipient of this transaction. This may be `name` if the transaction was a name purchase, or `a` if it was a name's data change.
     pub to: String,

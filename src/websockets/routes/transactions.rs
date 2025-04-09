@@ -98,7 +98,7 @@ pub async fn make_transaction(
     }
 
     let creation_data = TransactionCreateData {
-        from: sender.address.clone(),
+        from: Some(sender.address.clone()),
         to: recipient.address.clone(),
         amount,
         metadata: metadata.clone(),
