@@ -14,5 +14,6 @@
     "astro": "^5.3.0",
     "sharp": "^0.33.5",
     "starlight-openapi": "^0.13.0"
-  }
+  },
+  "packageManager": "pnpm@10.5.1+sha512.c424c076bd25c1a5b188c37bb1ca56cc1e136fbf530d98bcb3289982a08fd25527b8c9c4ec113be5e3393c39af04521dd647bcf1d0801eaf8ac6a7b14da313af"
 }
