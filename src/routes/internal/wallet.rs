@@ -1,6 +1,7 @@
-use actix_web::{post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use surrealdb::RecordId;
 
 use crate::database::models::player::Model as Player;
 use crate::database::models::transaction::{Model as Transaction, TransactionCreateData};
@@ -124,9 +125,7 @@ async fn wallet_get_by_uuid(
         .query("SELECT VALUE out.* FROM owns WHERE in = $record LIMIT 1;")
         .bind(("record", record_id))
         .await?;
-    let wallet: Wallet = db_result
-        .take(0)
-        .ok_or(KromerError::Wallet(WalletError::NotFound))?;
+    let wallet: Wallet = db_result.take(0)?;
 
     // Maybe not the best? maybe censor? idk.
     Ok(HttpResponse::Ok().json(wallet))
