@@ -93,13 +93,13 @@ async fn wallet_give_money(
         .bind(("amount", data.amount))
         .await?;
 
-	tracing::debug!("Made it here");
+    tracing::debug!("Made it here");
 
     let creation_data = TransactionCreateData {
         from: None,
         to: wallet.address,
         amount: data.amount,
-        metadata: None, 
+        metadata: None,
         transaction_type: TransactionType::Mined,
     };
 
@@ -110,10 +110,33 @@ async fn wallet_give_money(
     Ok(HttpResponse::Ok().json(response))
 }
 
+#[get("/by-player/{uuid}")]
+async fn wallet_get_by_uuid(
+    state: web::Data<AppState>,
+    uuid: web::Query<String>,
+) -> Result<HttpResponse, KromerError> {
+    let uuid = uuid.into_inner();
+    let db = &state.db;
+
+    let record_id = RecordId::from_table_key("player", uuid);
+
+    let db_result = db
+        .query("SELECT VALUE out.* FROM owns WHERE in = $record LIMIT 1;")
+        .bind(("record", record_id))
+        .await?;
+    let wallet: Wallet = db_result
+        .take(0)
+        .ok_or(KromerError::Wallet(WalletError::NotFound))?;
+
+    // Maybe not the best? maybe censor? idk.
+    Ok(HttpResponse::Ok().json(wallet))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/wallet")
             .service(wallet_create)
-            .service(wallet_give_money),
+            .service(wallet_give_money)
+            .service(wallet_get_by_uuid),
     );
 }
