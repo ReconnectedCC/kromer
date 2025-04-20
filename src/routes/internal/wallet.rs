@@ -121,11 +121,11 @@ async fn wallet_get_by_uuid(
 
     let record_id = RecordId::from_table_key("player", uuid);
 
-    let db_result = db
+    let mut db_result = db
         .query("SELECT VALUE out.* FROM owns WHERE in = $record LIMIT 1;")
         .bind(("record", record_id))
         .await?;
-    let wallet: Wallet = db_result.take(0)?;
+    let wallet: Option<Wallet> = db_result.take(0)?;
 
     // Maybe not the best? maybe censor? idk.
     Ok(HttpResponse::Ok().json(wallet))
