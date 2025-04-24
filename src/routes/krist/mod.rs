@@ -8,6 +8,7 @@ mod ws;
 use crate::routes::krist::transactions::__path_transaction_list;
 use actix_web::web;
 use utoipa::OpenApi;
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/lookup").configure(lookup::config));
 
